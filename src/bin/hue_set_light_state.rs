@@ -8,11 +8,11 @@ use regex::Regex;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 4 {
-        println!("usage : {:?} <username> <light_id>,<light_id>,... on|off|[bri]:[hue]:[sat]|[ct]MK:[bri]|[w]K:[bri]|[RR][GG][BB]:[bri] [transition_time]",
+        println!("usage : {:?} <username> <light_id>,<light_id>,... on|off|[bri]:[hue]:[sat]|[ct]MK:[bri]|[w]K:[bri]|[RR][GG][BB]:[bri]",
                  args[0]);
         return;
     }
-    let bridge = ::philipshue::bridge::Bridge::discover_required().with_user(args[1].to_string());
+    let bridge = ::philipshue::bridge::BridgeBuilder::discover().unwrap().from_username(args[1].clone());
     let ref lights: Vec<usize> = args[2].split(",").map(|s| s.parse::<usize>().unwrap()).collect();
     println!("lights: {:?}", lights);
     let ref command = args[3];
@@ -20,7 +20,7 @@ fn main() {
     let re_mired = Regex::new("([0-9]{0,4})MK:([0-9]{0,5})").unwrap();
     let re_kelvin = Regex::new("([0-9]{4,4})K:([0-9]{0,5})").unwrap();
     let re_rrggbb = Regex::new("([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
-    let mut parsed = match &command[..] {
+    let parsed = match &command[..] {
         "on" => philipshue::bridge::CommandLight::on(),
         "off" => philipshue::bridge::CommandLight::off(),
         _ if re_triplet.is_match(&command) => {
@@ -60,9 +60,6 @@ fn main() {
         }
         _ => panic!("can not understand command {:?}", command),
     };
-    if args.len() == 5 {
-        parsed.transitiontime = args[4].parse::<u16>().ok();
-    }
     for l in lights.iter() {
         println!("{:?}", bridge.set_light_state(*l, parsed));
         std::thread::sleep(Duration::from_millis(50))

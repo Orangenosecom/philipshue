@@ -7,7 +7,7 @@ fn main() {
         println!("usage : {:?} <username>", args[0]);
         return;
     }
-    let bridge = ::philipshue::bridge::Bridge::discover_required().with_user(args[1].to_string());
+    let bridge = ::philipshue::bridge::BridgeBuilder::discover().unwrap().from_username(args[1].clone());
     match bridge.get_all_lights() {
         Ok(lights) => {
             println!("id name                 on    bri   hue sat temp");

@@ -1,7 +1,7 @@
 extern crate philipshue;
-use philipshue::bridge::Bridge;
+use philipshue::bridge::BridgeBuilder;
 
 fn main() {
-    let bridge = Bridge::discover().unwrap();
+    let bridge = BridgeBuilder::discover().unwrap();
     println!("Hue bridge found: {:?}", bridge);
 }

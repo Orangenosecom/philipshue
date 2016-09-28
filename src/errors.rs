@@ -27,8 +27,8 @@ impl Encodable for AppError {
     }
 }
 
-impl AppError {
-    pub fn dec<S: Decoder>(decoder: &mut S) -> Result<AppError, S::Error> {
+impl Decodable for AppError {
+    fn decode<S: Decoder>(decoder: &mut S) -> Result<AppError, S::Error> {
         decoder.read_struct("root", 0, |decoder| {
             Ok(AppError {
                 address: try!(decoder.read_struct_field("address", 0, |decoder| Decodable::decode(decoder))),
@@ -40,6 +40,7 @@ impl AppError {
 }
 
 #[derive(Debug)]
+// TODO FIXME
 pub enum HueError {
     ProtocolError(String),
     BridgeError(AppError),
