@@ -76,7 +76,35 @@ impl BridgeBuilder{
 
 #[derive(Debug)]
 /// Iterator that tries to register a new user each iteration
-// TODO Better documention
+/// ## Example
+/// ```no_run
+/// use philipshue::errors::{HueError, BridgeError};
+///
+/// let mut bridge = None;
+/// // Discover a bridge
+/// let discovery = philipshue::bridge::discover().unwrap().pop().unwrap();
+/// let devicetype = "my_hue_app#iphone";
+///
+/// // Keep trying to register a user
+/// for res in discovery.build_bridge().register_user(devicetype){
+///     match res{
+///         // A new user has succesfully been registered and a `Bridge` object is returned
+///         Ok(r) => {
+///             bridge = Some(r);
+///         },
+///         // Prompt the user to press the link button
+///         Err(HueError::BridgeError{error: BridgeError::LinkButtonNotPressed, ..}) => {
+///             println!("Please, press the link on the bridge. Retrying in 5 seconds");
+///             std::thread::sleep(std::time::Duration::from_secs(5));
+///         },
+///         // Some other error happened
+///         Err(e) => {
+///             println!("Unexpected error occured: {:?}", e);
+///             break
+///         }
+///     }
+/// }
+/// ```
 pub struct RegisterIter<'a>(Option<BridgeBuilder>, &'a str);
 
 impl<'a> Iterator for RegisterIter<'a> {
@@ -128,13 +156,14 @@ impl<'a> Iterator for RegisterIter<'a> {
 /// The bridge connection
 pub struct Bridge {
     client: Client,
-    ip: String,
-    username: String,
+    /// The IP address of the bridge
+    pub ip: String,
+    /// The username for the user on the bridge
+    pub username: String,
 }
 
 impl Bridge {
     /// Gets all lights from the bridge
-    // TODO Clean up
     pub fn get_all_lights(&self) -> Result<Vec<IdentifiedLight>, HueError> {
         let url = format!("http://{}/api/{}/lights",
                           self.ip,
@@ -158,7 +187,6 @@ impl Bridge {
         Ok(lights)
     }
     /// Sends a `LightCommand` to set the state of a light
-    // TODO Clean up
     pub fn set_light_state(&self, light: usize, command: LightCommand) -> Result<Json, HueError> {
         let url = format!("http://{}/api/{}/lights/{}/state",
                           self.ip,
