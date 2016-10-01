@@ -1,27 +1,41 @@
 use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
-use rustc_serialize::json::{self, Json};
 
 #[derive(Debug,Copy,Clone,RustcDecodable)]
+/// The state of the light, very similar to `LightCommand` except most fields aren't optional
 pub struct LightState {
+    /// Whether the light is on
     pub on: bool,
+    /// Brightness of the light. This is a scale from the minimum capable brightness, 1, to the maximum, 254.
     pub bri: u8,
+    /// Hue of the light. Both 0 and 65535 are red, 25500 is green and 46920 is blue.
     pub hue: u16,
+    /// Staturation of the light. 254 is the most saturated (colored) and 0 is the least (white).
     pub sat: u8,
+    /// The [mired](http://en.wikipedia.org/wiki/Mired) colour temperature of the light.
     pub ct: Option<u16>,
 }
 
 #[derive(Debug,Clone,RustcDecodable)]
+/// Details about a specific light
 pub struct Light {
+    /// The unique name given to the light
     pub name: String,
+    /// The hardware model of the light
     pub modelid: String,
+    /// The version of the software running on the light
     pub swversion: String,
+    /// Unique ID of the device
     pub uniqueid: String,
-    pub state: LightState,
+    /// The state of the light (`LightState` for more)
+    pub state: LightState
 }
 
 #[derive(Debug,Clone)]
+/// A newly identified light
 pub struct IdentifiedLight {
+    /// The ID number of this light
     pub id: usize,
+    /// The light object
     pub light: Light,
 }
 
@@ -29,7 +43,7 @@ pub struct IdentifiedLight {
 /// Struct for building a command that will be sent to the Hue bridge telling it what to do with a light
 ///
 /// View [the lights-api documention](http://www.developers.meethue.com/documentation/lights-api) for more information
-pub struct CommandLight {
+pub struct LightCommand {
     /// Whether to turn the light off or on
     pub on: Option<bool>,
     /// Brightness of the colour of the light
@@ -42,30 +56,30 @@ pub struct CommandLight {
     pub ct: Option<u16>,
 }
 
-impl CommandLight {
-    /// Returns a `CommandLight` that turns a light on
+impl LightCommand {
+    /// Returns a `LightCommand` that turns a light on
     pub fn on(self) -> Self {
-        CommandLight { on: Some(true), ..self }
+        LightCommand { on: Some(true), ..self }
     }
-    /// Returns a `CommandLight` that turns a light on
+    /// Returns a `LightCommand` that turns a light on
     pub fn off(self) -> Self {
-        CommandLight { on: Some(false), ..self }
+        LightCommand { on: Some(false), ..self }
     }
     /// Sets the brightness to set the light to
     pub fn with_bri(self, b: u8) -> Self {
-        CommandLight { bri: Some(b), ..self }
+        LightCommand { bri: Some(b), ..self }
     }
     /// Sets the hue to set the light to
     pub fn with_hue(self, h: u16) -> Self {
-        CommandLight { hue: Some(h), ..self }
+        LightCommand { hue: Some(h), ..self }
     }
     /// Sets the saturation to set the light to
     pub fn with_sat(self, s: u8) -> Self {
-        CommandLight { sat: Some(s), ..self }
+        LightCommand { sat: Some(s), ..self }
     }
     /// Sets the temperature to set the light to
     pub fn with_ct(self, c: u16) -> Self {
-        CommandLight { ct: Some(c), ..self }
+        LightCommand { ct: Some(c), ..self }
     }
 }
 
@@ -88,8 +102,11 @@ pub struct User{
 #[derive(Debug)]
 /// An error object returned from the API
 pub struct Error {
+    /// Which URI the error happened on
     pub address: String,
+    /// A short description of the error
     pub description: String,
+    /// Its errorcode
     pub code: u8,
 }
 

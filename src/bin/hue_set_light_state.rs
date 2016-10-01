@@ -5,7 +5,7 @@ use std::env;
 use std::time::Duration;
 use regex::Regex;
 
-use philipshue::hue::CommandLight;
+use philipshue::hue::LightCommand;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -23,7 +23,7 @@ fn main() {
     let re_kelvin = Regex::new("([0-9]{4,4})K:([0-9]{0,5})").unwrap();
     let re_rrggbb = Regex::new("([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
 
-    let mut light_command = CommandLight::default();
+    let mut light_command = LightCommand::default();
 
     let parsed = match &command[..] {
         "on" => light_command.on(),

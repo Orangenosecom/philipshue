@@ -4,9 +4,8 @@ use regex::Regex;
 
 use hyper::Client;
 use hyper::client::Body;
-use hyper::client::response::Response;
 
-use rustc_serialize::{Encodable, Decodable};
+use rustc_serialize::Decodable;
 use rustc_serialize::json::{self, Json};
 
 use errors::HueError;
@@ -54,6 +53,7 @@ pub struct BridgeBuilder{
 }
 
 impl BridgeBuilder{
+    /// Starts building a `Bridge` from the given IP
     pub fn from_ip(ip: String) -> Self{
         BridgeBuilder{
             ip: ip
@@ -140,26 +140,26 @@ impl Bridge {
                           self.ip,
                           self.username);
 
-        let mut resp = try!(self.client.get(&url[..]).send());
+        let mut resp = try!(self.client.get(&url).send());
         let json = try!(json::Json::from_reader(&mut resp));
         let json_object = try!(json.as_object().ok_or(HueError::ProtocolError("malformed bridge response".to_string())));
-        let mut lights: Vec<IdentifiedLight> = try!(json_object.iter()
+        let mut lights: Vec<IdentifiedLight> = try!(json_object.into_iter()
             .map(|(k, v)| -> Result<IdentifiedLight, HueError> {
                 let id: usize = try!(usize::from_str(k));
                 let mut decoder = json::Decoder::new(v.clone());
-                let light = try!(<Light as Decodable>::decode(&mut decoder));
+                let light = try!(Light::decode(&mut decoder));
                 Ok(IdentifiedLight {
                     id: id,
                     light: light,
                 })
             })
             .collect());
-        lights.sort_by(|a, b| a.id.cmp(&b.id));
+        lights.sort_by_key(|x| x.id);
         Ok(lights)
     }
-    /// Sends a `CommandLight` to set the state of a light
+    /// Sends a `LightCommand` to set the state of a light
     // TODO Clean up
-    pub fn set_light_state(&self, light: usize, command: CommandLight) -> Result<Json, HueError> {
+    pub fn set_light_state(&self, light: usize, command: LightCommand) -> Result<Json, HueError> {
         let url = format!("http://{}/api/{}/lights/{}/state",
                           self.ip,
                           self.username,

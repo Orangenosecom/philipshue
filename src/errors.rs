@@ -1,27 +1,32 @@
 use hyper;
 use std::convert::From;
-use std::error::Error;
 use rustc_serialize::json;
 use std::num::ParseIntError;
-
-use ::hue::Error as AppError;
 
 #[derive(Debug)]
 // TODO FIXME
 /// Errors that can occur in this crate
 pub enum HueError {
+    /// A general protocol error
     ProtocolError(String),
+    /// An error that occured in the bridge
     BridgeError(::hue::Error),
+    /// A `json::EncoderError`
     EncoderError(json::EncoderError),
+    /// A `json::DecoderError`
     DecoderError(json::DecoderError),
+    /// A `json::ParserError`
     ParserError(json::ParserError),
+    /// A `hyper::Error`
     HyperError(hyper::Error),
+    /// An `std::num::ParseIntError`
     ParseIntError(ParseIntError)
 }
 
 impl HueError {
-    pub fn wrap<O>(a: &str) -> ::std::result::Result<O, HueError> {
-        Err(HueError::ProtocolError(a.to_string()))
+    /// Returns a `ProtocolError` with the given string
+    pub fn wrap<S: ToString, O>(s: S) -> ::std::result::Result<O, HueError> {
+        Err(HueError::ProtocolError(s.to_string()))
     }
 }
 

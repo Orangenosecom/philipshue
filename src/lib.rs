@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-//! Crate for communicating via the hue API
+//! Crate for communicating with the hue API
 
 extern crate rustc_serialize;
 extern crate hyper;
