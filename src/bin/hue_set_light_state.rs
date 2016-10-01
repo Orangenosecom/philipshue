@@ -22,43 +22,46 @@ fn main() {
     let re_mired = Regex::new("([0-9]{0,4})MK:([0-9]{0,5})").unwrap();
     let re_kelvin = Regex::new("([0-9]{4,4})K:([0-9]{0,5})").unwrap();
     let re_rrggbb = Regex::new("([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
+
+    let mut light_command = CommandLight::default();
+
     let parsed = match &command[..] {
-        "on" => CommandLight::on(),
-        "off" => CommandLight::off(),
+        "on" => light_command.on(),
+        "off" => light_command.off(),
         _ if re_triplet.is_match(&command) => {
             let caps = re_triplet.captures(&command).unwrap();
-            let mut command = CommandLight::on();
-            command.bri = caps.at(1).and_then(|s| s.parse::<u8>().ok());
-            command.hue = caps.at(2).and_then(|s| s.parse::<u16>().ok());
-            command.sat = caps.at(3).and_then(|s| s.parse::<u8>().ok());
-            command
+
+            light_command.bri = caps.at(1).and_then(|s| s.parse::<u8>().ok());
+            light_command.hue = caps.at(2).and_then(|s| s.parse::<u16>().ok());
+            light_command.sat = caps.at(3).and_then(|s| s.parse::<u8>().ok());
+            light_command
         }
         _ if re_mired.is_match(&command) => {
             let caps = re_mired.captures(&command).unwrap();
-            let mut command = CommandLight::on();
-            command.ct = caps.at(1).and_then(|s| s.parse::<u16>().ok());
-            command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
-            command.sat = Some(254);
-            command
+
+            light_command.ct = caps.at(1).and_then(|s| s.parse::<u16>().ok());
+            light_command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
+            light_command.sat = Some(254);
+            light_command
         }
         _ if re_kelvin.is_match(&command) => {
             let caps = re_kelvin.captures(&command).unwrap();
-            let mut command = CommandLight::on();
-            command.ct = caps.at(1).and_then(|s| s.parse::<u32>().ok().map(|k| (1000000u32 / k) as u16));
-            command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
-            command.sat = Some(254);
-            command
+
+            light_command.ct = caps.at(1).and_then(|s| s.parse::<u32>().ok().map(|k| (1000000u32 / k) as u16));
+            light_command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
+            light_command.sat = Some(254);
+            light_command
         }
         _ if re_rrggbb.is_match(&command) => {
             let caps = re_rrggbb.captures(&command).unwrap();
-            let mut command = CommandLight::on();
+
             let rgb: Vec<u8> = [caps.at(1), caps.at(2), caps.at(3)].iter().map(|s| u8::from_str_radix(s.unwrap(), 16).unwrap()).collect();
             let hsv = rgb_to_hsv(rgb[0], rgb[1], rgb[2]);
             println!("{:?}", hsv);
-            command.hue = Some((hsv.0 * 65535f64) as u16);
-            command.sat = Some((hsv.1 * 255f64) as u8);
-            command.bri = Some((hsv.2 * 255f64) as u8);
-            command
+            light_command.hue = Some((hsv.0 * 65535f64) as u16);
+            light_command.sat = Some((hsv.1 * 255f64) as u8);
+            light_command.bri = Some((hsv.2 * 255f64) as u8);
+            light_command
         }
         _ => panic!("can not understand command {:?}", command),
     };

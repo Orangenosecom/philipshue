@@ -76,6 +76,7 @@ impl BridgeBuilder{
 
 #[derive(Debug)]
 /// Iterator that tries to register a new user each iteration
+// TODO Better documention
 pub struct RegisterIter<'a>(Option<BridgeBuilder>, &'a str);
 
 impl<'a> Iterator for RegisterIter<'a> {
@@ -133,6 +134,7 @@ pub struct Bridge {
 
 impl Bridge {
     /// Gets all lights from the bridge
+    // TODO Clean up
     pub fn get_all_lights(&self) -> Result<Vec<IdentifiedLight>, HueError> {
         let url = format!("http://{}/api/{}/lights",
                           self.ip,
@@ -156,24 +158,23 @@ impl Bridge {
         Ok(lights)
     }
     /// Sends a `CommandLight` to set the state of a light
+    // TODO Clean up
     pub fn set_light_state(&self, light: usize, command: CommandLight) -> Result<Json, HueError> {
         let url = format!("http://{}/api/{}/lights/{}/state",
                           self.ip,
                           self.username,
                           light);
         let body = try!(json::encode(&command));
-        let re1 = Regex::new("\"[a-z]*\":null").unwrap();
+        let re1 = Regex::new("\"[a-z]*\":null,?").unwrap();
         let cleaned1 = re1.replace_all(&body, "");
-        let re2 = Regex::new(",+").unwrap();
-        let cleaned2 = re2.replace_all(&cleaned1, ",");
-        let re3 = Regex::new(",\\}").unwrap();
-        let cleaned3 = re3.replace_all(&cleaned2, "}");
-        let re3 = Regex::new("\\{,").unwrap();
-        let cleaned4 = re3.replace_all(&cleaned3, "{");
+        let re2 = Regex::new(",\\}").unwrap();
+        let cleaned2 = re2.replace_all(&cleaned1, "}");
+        let body = cleaned2.as_bytes();
 
-        let mut resp = try!(self.client.put(&url[..])
-            .body(Body::BufBody(cleaned4.as_bytes(), cleaned4.as_bytes().len()))
+        let mut resp = try!(self.client.put(&url)
+            .body(Body::BufBody(body, body.len()))
             .send());
-        Json::from_reader(&mut resp).map_err(From::from)
+        let mut decoder = json::Decoder::new(try!(Json::from_reader(&mut resp)));
+        HueResponse::decode(&mut decoder).map_err(From::from)
     }
 }

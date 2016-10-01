@@ -44,12 +44,12 @@ pub struct CommandLight {
 
 impl CommandLight {
     /// Returns a `CommandLight` that turns a light on
-    pub fn on() -> Self {
-        CommandLight { on: Some(true), ..Default::default() }
+    pub fn on(self) -> Self {
+        CommandLight { on: Some(true), ..self }
     }
     /// Returns a `CommandLight` that turns a light on
-    pub fn off() -> Self {
-        CommandLight { on: Some(false), ..Default::default() }
+    pub fn off(self) -> Self {
+        CommandLight { on: Some(false), ..self }
     }
     /// Sets the brightness to set the light to
     pub fn with_bri(self, b: u8) -> Self {
