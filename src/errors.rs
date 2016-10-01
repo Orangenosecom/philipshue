@@ -10,7 +10,12 @@ pub enum HueError {
     /// A general protocol error
     ProtocolError(String),
     /// An error that occured in the bridge
-    BridgeError(::hue::Error),
+    BridgeError{
+        /// The URI the error happened on
+        address: String,
+        /// The `BridgeError`
+        error: BridgeError
+    },
     /// A `json::EncoderError`
     EncoderError(json::EncoderError),
     /// A `json::DecoderError`
@@ -23,10 +28,47 @@ pub enum HueError {
     ParseIntError(ParseIntError)
 }
 
+/// All errors defined in [http://www.developers.meethue.com/documentation/error-messages]
+#[repr(u16)]
+#[allow(missing_docs)]
+#[derive(Debug, Copy, Clone)]
+pub enum BridgeError{
+    // Generic Errors
+    UnauthorizedUser = 1,
+    BodyContainsInvalidJSON = 2,
+    ResourceNotAvailable = 3,
+    MethodNotAvailableForResource = 4,
+    MissingParametersInBody = 5,
+    ParameterNotAvailable = 6,
+    InvalidValueForParameter = 7,
+    ParameterIsNotModifiable = 8,
+    TooManyItemsInList = 11,
+    ProtalConnectionRequired = 12,
+    InternalError = 901,
+
+    // Command Specific Errors
+    LinkButtonNotPressed = 101,
+    DHCPCannotBeDisabled = 110,
+    InvalidUpdateState = 111,
+    // TODO add the rest of the command specific errors
+    Other
+}
+
 impl HueError {
     /// Returns a `ProtocolError` with the given string
     pub fn wrap<S: ToString, O>(s: S) -> ::std::result::Result<O, HueError> {
         Err(HueError::ProtocolError(s.to_string()))
+    }
+}
+
+use std::mem::transmute;
+
+impl From<::hue::Error> for HueError {
+    fn from(::hue::Error{address, code,..}: ::hue::Error) -> Self {
+        HueError::BridgeError{
+            address: address,
+            error: unsafe{transmute(code)}
+        }
     }
 }
 

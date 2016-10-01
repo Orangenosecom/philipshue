@@ -1,7 +1,11 @@
 extern crate philipshue;
+
 use std::env;
 use std::thread;
 use std::time::Duration;
+
+use philipshue::errors::HueError;
+use philipshue::errors::BridgeError;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -17,7 +21,14 @@ fn main() {
                     bridge = Some(r);
                     break
                 },
-                Err(e) => {println!("{:?}", e);thread::sleep(Duration::from_secs(2))}
+                Err(HueError::BridgeError{error: BridgeError::LinkButtonNotPressed, ..}) => {
+                    println!("Please, press the link on the bridge. Retrying in 5 seconds");
+                    thread::sleep(Duration::from_secs(5));
+                },
+                Err(e) => {
+                    println!("Unexpected error occured: {:?}", e);
+                    return
+                }
             }
         }
         println!("{:?}", bridge);

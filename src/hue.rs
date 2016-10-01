@@ -102,12 +102,12 @@ pub struct User{
 #[derive(Debug)]
 /// An error object returned from the API
 pub struct Error {
-    /// Which URI the error happened on
+    /// The URI the error happened on
     pub address: String,
     /// A short description of the error
     pub description: String,
     /// Its errorcode
-    pub code: u8,
+    pub code: u16,
 }
 
 impl Encodable for Error {

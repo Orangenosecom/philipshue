@@ -114,7 +114,7 @@ impl<'a> Iterator for RegisterIter<'a> {
                 })
             }else if let Some(error) = rur.error{
                 self.0 = Some(bb);
-                Err(HueError::BridgeError(error))
+                Err(error.into())
             }else{
                 Err(HueError::ProtocolError("Unrecognisable response".to_owned()))
             })
