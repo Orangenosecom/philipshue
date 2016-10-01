@@ -10,3 +10,5 @@ extern crate regex;
 pub mod errors;
 /// Module responsible for communicating with the Hue bridge
 pub mod bridge;
+/// Module with structs mapping the different JSON-objects used with Hue API
+pub mod hue;

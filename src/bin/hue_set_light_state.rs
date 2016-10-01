@@ -5,6 +5,8 @@ use std::env;
 use std::time::Duration;
 use regex::Regex;
 
+use philipshue::hue::CommandLight;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 4 {
@@ -12,7 +14,7 @@ fn main() {
                  args[0]);
         return;
     }
-    let bridge = ::philipshue::bridge::BridgeBuilder::discover().unwrap().from_username(args[1].clone());
+    let bridge = philipshue::bridge::discover().unwrap().pop().unwrap().build_bridge().from_username(args[1].clone());
     let ref lights: Vec<usize> = args[2].split(",").map(|s| s.parse::<usize>().unwrap()).collect();
     println!("lights: {:?}", lights);
     let ref command = args[3];
@@ -21,11 +23,11 @@ fn main() {
     let re_kelvin = Regex::new("([0-9]{4,4})K:([0-9]{0,5})").unwrap();
     let re_rrggbb = Regex::new("([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
     let parsed = match &command[..] {
-        "on" => philipshue::bridge::CommandLight::on(),
-        "off" => philipshue::bridge::CommandLight::off(),
+        "on" => CommandLight::on(),
+        "off" => CommandLight::off(),
         _ if re_triplet.is_match(&command) => {
             let caps = re_triplet.captures(&command).unwrap();
-            let mut command = philipshue::bridge::CommandLight::on();
+            let mut command = CommandLight::on();
             command.bri = caps.at(1).and_then(|s| s.parse::<u8>().ok());
             command.hue = caps.at(2).and_then(|s| s.parse::<u16>().ok());
             command.sat = caps.at(3).and_then(|s| s.parse::<u8>().ok());
@@ -33,7 +35,7 @@ fn main() {
         }
         _ if re_mired.is_match(&command) => {
             let caps = re_mired.captures(&command).unwrap();
-            let mut command = philipshue::bridge::CommandLight::on();
+            let mut command = CommandLight::on();
             command.ct = caps.at(1).and_then(|s| s.parse::<u16>().ok());
             command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
             command.sat = Some(254);
@@ -41,7 +43,7 @@ fn main() {
         }
         _ if re_kelvin.is_match(&command) => {
             let caps = re_kelvin.captures(&command).unwrap();
-            let mut command = philipshue::bridge::CommandLight::on();
+            let mut command = CommandLight::on();
             command.ct = caps.at(1).and_then(|s| s.parse::<u32>().ok().map(|k| (1000000u32 / k) as u16));
             command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
             command.sat = Some(254);
@@ -49,7 +51,7 @@ fn main() {
         }
         _ if re_rrggbb.is_match(&command) => {
             let caps = re_rrggbb.captures(&command).unwrap();
-            let mut command = philipshue::bridge::CommandLight::on();
+            let mut command = CommandLight::on();
             let rgb: Vec<u8> = [caps.at(1), caps.at(2), caps.at(3)].iter().map(|s| u8::from_str_radix(s.unwrap(), 16).unwrap()).collect();
             let hsv = rgb_to_hsv(rgb[0], rgb[1], rgb[2]);
             println!("{:?}", hsv);

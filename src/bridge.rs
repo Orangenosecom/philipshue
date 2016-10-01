@@ -1,6 +1,4 @@
 use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
 
 use regex::Regex;
 
@@ -11,174 +9,136 @@ use hyper::client::response::Response;
 use rustc_serialize::{Encodable, Decodable};
 use rustc_serialize::json::{self, Json};
 
-use errors::{HueError, AppError};
+use errors::HueError;
+use ::hue::*;
 
-#[derive(Debug,Copy,Clone,RustcDecodable)]
-pub struct LightState {
-    pub on: bool,
-    pub bri: u8,
-    pub hue: u16,
-    pub sat: u8,
-    pub ct: Option<u16>,
+/// Attempts to discover bridges using `https://www.meethue.com/api/nupnp`
+pub fn discover() -> Result<Vec<Discovery>, HueError> {
+    let client = Client::new();
+
+    let mut res = try!(client.get("https://www.meethue.com/api/nupnp").send());
+
+    <Vec<Discovery>>::decode(&mut json::Decoder::new(try!(json::Json::from_reader(&mut res))))
+    .map_err(From::from)
 }
 
-#[derive(Debug,Clone,RustcDecodable)]
-pub struct Light {
-    pub name: String,
-    pub modelid: String,
-    pub swversion: String,
-    pub uniqueid: String,
-    pub state: LightState,
-}
-
-#[derive(Debug,Clone)]
-pub struct IdentifiedLight {
-    pub id: usize,
-    pub light: Light,
-}
-
-#[derive(Debug, Default, Clone, Copy, RustcEncodable, RustcDecodable)]
-/// Struct for building a command that will be sent to the Hue bridge telling it what to do with a light
-///
-/// View [the lights-api documention](http://www.developers.meethue.com/documentation/lights-api) for more information
-pub struct CommandLight {
-    /// Whether to turn the light off or on
-    pub on: Option<bool>,
-    /// Brightness of the colour of the light
-    pub bri: Option<u8>,
-    /// The hue of the colour of the light
-    pub hue: Option<u16>,
-    /// The saturation of the colour of the light
-    pub sat: Option<u8>,
-    /// The Mired Color temperature of the light. 2012 connected lights are capable of 153 (6500K) to 500 (2000K).
-    pub ct: Option<u16>,
-}
-
-impl CommandLight {
-    /// Returns a `CommandLight` that turns a light on
-    pub fn on() -> Self {
-        CommandLight { on: Some(true), ..Default::default() }
-    }
-    /// Returns a `CommandLight` that turns a light on
-    pub fn off() -> Self {
-        CommandLight { on: Some(false), ..Default::default() }
-    }
-    /// Sets the brightness to set the light to
-    pub fn with_bri(self, b: u8) -> Self {
-        CommandLight { bri: Some(b), ..self }
-    }
-    /// Sets the hue to set the light to
-    pub fn with_hue(self, h: u16) -> Self {
-        CommandLight { hue: Some(h), ..self }
-    }
-    /// Sets the saturation to set the light to
-    pub fn with_sat(self, s: u8) -> Self {
-        CommandLight { sat: Some(s), ..self }
-    }
-    /// Sets the temperature to set the light to
-    pub fn with_ct(self, c: u16) -> Self {
-        CommandLight { ct: Some(c), ..self }
-    }
-}
-
-#[derive(Debug, RustcEncodable, RustcDecodable)]
-struct RegisterResponse<T: Encodable + Decodable>{
-    success: Option<T>,
-    error: Option<AppError>
-}
-
-#[derive(Debug, RustcEncodable, RustcDecodable)]
-struct User{
-    username: String
-}
-/// A builder object for a `Bridge`
-#[derive(Debug, Clone)]
-pub struct BridgeBuilder{
-    ip: String
-}
-
-#[derive(Debug, RustcEncodable, RustcDecodable)]
-struct Discovery{
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
+/// Responses from the `discover` function
+pub struct Discovery{
     id: String,
     internalipaddress: String
 }
 
+impl Discovery {
+    /// Returns a `BridgeBuilder` with the ip of the bridge discovered
+    pub fn build_bridge(self) -> BridgeBuilder{
+        let Discovery{internalipaddress,..} = self;
+        BridgeBuilder{
+            ip: internalipaddress
+        }
+    }
+    /// The ip of this discovered bridge
+    pub fn ip(&self) -> &str{
+        &self.internalipaddress
+    }
+    /// The id of this discovered bridge
+    pub fn id(&self) -> &str{
+        &self.id
+    }
+}
+
+/// A builder object for a `Bridge`
+#[derive(Debug)]
+pub struct BridgeBuilder{
+    ip: String
+}
+
 impl BridgeBuilder{
-    /// Discovers the bridge via https://www.meethue.com/api/nupnp
-    pub fn discover() -> Result<Self, HueError> {
-        let client = Client::new();
-
-        let mut res = try!(client.get("https://www.meethue.com/api/nupnp").send());
-
-        let discoveries = try!(<Vec<Discovery>>::decode(&mut json::Decoder::new(try!(json::Json::from_reader(&mut res)))));
-
-        Ok(
-            BridgeBuilder {
-                ip: discoveries[0].internalipaddress.clone()
-            }
-        )
+    pub fn from_ip(ip: String) -> Self{
+        BridgeBuilder{
+            ip: ip
+        }
     }
     /// Returns a `Bridge` from an already existing user
     pub fn from_username(self, username: String) -> Bridge {
         let BridgeBuilder{ip} = self;
         Bridge {
+            client: Client::new(),
             username: username,
             ip: ip
         }
     }
-    fn register(&self, devicetype: &str) -> Result<User, HueError>{
-        let body = format!("{{devicetype: \"{}\"}}", devicetype);
-        let body = body.as_bytes();
-        let client = Client::new();
-        let url = format!("http://{}/api", self.ip);
-        let mut resp = try!(client.post(&url)
-            .body(Body::BufBody(body, body.len()))
-            .send());
-
-        let rur = try!(RegisterResponse::decode(&mut json::Decoder::new(try!(Json::from_reader(&mut resp)))));
-
-        if let Some(user) = rur.success{
-            Ok(user)
-        }else if let Some(error) = rur.error{
-            Err(HueError::BridgeError(error))
-        }else{
-            Err(HueError::ProtocolError("Unrecognisable response".to_owned()))
-        }
-    }
     /// Registers a new user on the bridge
-    pub fn register_user(self, devicetype: &str) -> Result<Bridge, HueError>{
-        loop {
-            match self.register(devicetype) {
-                Ok(User{username}) => {
-                    return Ok(Bridge{
-                        username: username,
-                        ip: self.ip.clone()
-                    });
-                }
-                Err(HueError::BridgeError(ref error)) if error.code == 101 => {
-                    println!("Push the bridge button");
-                    thread::sleep(Duration::from_secs(5));
-                }
-                Err(e) => return Err(e)
-            }
+    pub fn register_user(self, devicetype: &str) -> RegisterIter{
+        RegisterIter(Some(self), devicetype)
+    }
+}
+
+#[derive(Debug)]
+/// Iterator that tries to register a new user each iteration
+pub struct RegisterIter<'a>(Option<BridgeBuilder>, &'a str);
+
+impl<'a> Iterator for RegisterIter<'a> {
+    type Item = Result<Bridge, HueError>;
+    fn next(&mut self) -> Option<Self::Item>{
+        if self.0.is_some(){
+            let client = Client::new();
+            let bb = ::std::mem::replace(&mut self.0, None).unwrap();
+
+            let body = format!("{{\"devicetype\": {:?}}}", self.1);
+            let body = body.as_bytes();
+            let url = format!("http://{}/api", bb.ip);
+            let mut resp = match client.post(&url)
+                .body(Body::BufBody(body, body.len()))
+                .send() {
+                    Ok(r) => r,
+                    Err(e) => return Some(Err(HueError::from(e)))
+                };
+
+
+            let rur = match Json::from_reader(&mut resp)
+            .map_err(From::from)
+            .and_then(|r| <Vec<HueResponse<User>>>::decode(&mut json::Decoder::new(r))) {
+                Ok(mut r) => r.pop().unwrap(),
+                Err(e) => return Some(Err(HueError::from(e)))
+            };
+
+            Some(if let Some(User{username}) = rur.success{
+                let BridgeBuilder{ip} = bb;
+
+                Ok(Bridge{
+                    ip: ip,
+                    client: client,
+                    username: username
+                })
+            }else if let Some(error) = rur.error{
+                self.0 = Some(bb);
+                Err(HueError::BridgeError(error))
+            }else{
+                Err(HueError::ProtocolError("Unrecognisable response".to_owned()))
+            })
+        }else{
+            None
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 /// The bridge connection
 pub struct Bridge {
+    client: Client,
     ip: String,
     username: String,
 }
 
 impl Bridge {
+    /// Gets all lights from the bridge
     pub fn get_all_lights(&self) -> Result<Vec<IdentifiedLight>, HueError> {
         let url = format!("http://{}/api/{}/lights",
                           self.ip,
                           self.username);
-        let client = Client::new();
-        let mut resp = try!(client.get(&url[..]).send());
+
+        let mut resp = try!(self.client.get(&url[..]).send());
         let json = try!(json::Json::from_reader(&mut resp));
         let json_object = try!(json.as_object().ok_or(HueError::ProtocolError("malformed bridge response".to_string())));
         let mut lights: Vec<IdentifiedLight> = try!(json_object.iter()
@@ -195,7 +155,7 @@ impl Bridge {
         lights.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(lights)
     }
-
+    /// Sends a `CommandLight` to set the state of a light
     pub fn set_light_state(&self, light: usize, command: CommandLight) -> Result<Json, HueError> {
         let url = format!("http://{}/api/{}/lights/{}/state",
                           self.ip,
@@ -210,8 +170,8 @@ impl Bridge {
         let cleaned3 = re3.replace_all(&cleaned2, "}");
         let re3 = Regex::new("\\{,").unwrap();
         let cleaned4 = re3.replace_all(&cleaned3, "{");
-        let client = Client::new();
-        let mut resp = try!(client.put(&url[..])
+
+        let mut resp = try!(self.client.put(&url[..])
             .body(Body::BufBody(cleaned4.as_bytes(), cleaned4.as_bytes().len()))
             .send());
         Json::from_reader(&mut resp).map_err(From::from)
