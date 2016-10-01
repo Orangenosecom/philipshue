@@ -174,7 +174,7 @@ impl Bridge {
         let mut resp = try!(self.client.put(&url)
             .body(Body::BufBody(body, body.len()))
             .send());
-        let mut decoder = json::Decoder::new(try!(Json::from_reader(&mut resp)));
-        HueResponse::decode(&mut decoder).map_err(From::from)
+
+        Json::from_reader(&mut resp).map_err(From::from)
     }
 }
