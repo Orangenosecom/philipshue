@@ -19,7 +19,6 @@ fn main() {
             match res{
                 Ok(r) => {
                     bridge = Some(r);
-                    break
                 },
                 Err(HueError::BridgeError{error: BridgeError::LinkButtonNotPressed, ..}) => {
                     println!("Please, press the link on the bridge. Retrying in 5 seconds");
@@ -27,7 +26,7 @@ fn main() {
                 },
                 Err(e) => {
                     println!("Unexpected error occured: {:?}", e);
-                    return
+                    break
                 }
             }
         }

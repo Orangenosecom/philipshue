@@ -116,7 +116,7 @@ impl<'a> Iterator for RegisterIter<'a> {
                 self.0 = Some(bb);
                 Err(error.into())
             }else{
-                Err(HueError::ProtocolError("Unrecognisable response".to_owned()))
+                Err(HueError::MalformedResponse)
             })
         }else{
             None
@@ -142,7 +142,7 @@ impl Bridge {
 
         let mut resp = try!(self.client.get(&url).send());
         let json = try!(json::Json::from_reader(&mut resp));
-        let json_object = try!(json.as_object().ok_or(HueError::ProtocolError("malformed bridge response".to_string())));
+        let json_object = try!(json.as_object().ok_or(HueError::MalformedResponse));
         let mut lights: Vec<IdentifiedLight> = try!(json_object.into_iter()
             .map(|(k, v)| -> Result<IdentifiedLight, HueError> {
                 let id: usize = try!(usize::from_str(k));

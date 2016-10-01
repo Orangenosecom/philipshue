@@ -7,8 +7,8 @@ use std::num::ParseIntError;
 // TODO FIXME
 /// Errors that can occur in this crate
 pub enum HueError {
-    /// A general protocol error
-    ProtocolError(String),
+    /// Error that occurs when the response from the bridge is malformed
+    MalformedResponse,
     /// An error that occured in the bridge
     BridgeError{
         /// The URI the error happened on
@@ -52,13 +52,6 @@ pub enum BridgeError{
     InvalidUpdateState = 111,
     // TODO add the rest of the command specific errors
     Other
-}
-
-impl HueError {
-    /// Returns a `ProtocolError` with the given string
-    pub fn wrap<S: ToString, O>(s: S) -> ::std::result::Result<O, HueError> {
-        Err(HueError::ProtocolError(s.to_string()))
-    }
 }
 
 use std::mem::transmute;
