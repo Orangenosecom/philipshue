@@ -21,12 +21,12 @@ pub fn discover() -> Result<Vec<Discovery>, HueError> {
 /// Therefore it recommended to call this function in a loop:
 /// ## Example
 /// ```no_run
-/// use philipshue::errors::{HueError, BridgeError};
-/// use philipshue::bridge::{self, Bridge};
+/// use philips_hue_client::errors::{HueError, BridgeError};
+/// use philips_hue_client::bridge::{self, Bridge};
 ///
 /// let mut bridge = None;
 /// // Discover a bridge
-/// let bridge_ip = philipshue::bridge::discover().unwrap().pop().unwrap().into_ip();
+/// let bridge_ip = philips_hue_client::bridge::discover().unwrap().pop().unwrap().into_ip();
 /// let devicetype = "my_hue_app#homepc";
 ///
 /// // Keep trying to register a user

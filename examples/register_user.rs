@@ -1,18 +1,18 @@
-extern crate philipshue;
+extern crate philips_hue_client;
 
 use std::env;
 use std::thread;
 use std::time::Duration;
 
-use philipshue::bridge;
-use philipshue::errors::{HueError, BridgeError};
+use philips_hue_client::bridge;
+use philips_hue_client::errors::{HueError, BridgeError};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         println!("usage : {:?} <devicetype>", args[0]);
     } else {
-        let discovery = philipshue::bridge::discover().unwrap().pop().unwrap();
+        let discovery = philips_hue_client::bridge::discover().unwrap().pop().unwrap();
         let ip = discovery.ip();
 
         loop{

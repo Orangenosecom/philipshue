@@ -13,6 +13,8 @@ pub struct LightState {
     pub sat: u8,
     /// The [mired](http://en.wikipedia.org/wiki/Mired) colour temperature of the light.
     pub ct: Option<u16>,
+    /// If the light is reachable
+    pub reachable: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]

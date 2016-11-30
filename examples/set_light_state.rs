@@ -1,12 +1,12 @@
-extern crate philipshue;
+extern crate philips_hue_client;
 extern crate regex;
 
 use std::env;
 use std::time::Duration;
 use regex::Regex;
 
-use philipshue::hue::LightCommand;
-use philipshue::bridge::{discover, Bridge};
+use philips_hue_client::hue::LightCommand;
+use philips_hue_client::bridge::{discover, Bridge};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

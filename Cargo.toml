@@ -1,14 +1,16 @@
 [package]
 
-name = "philipshue"
-version = "0.0.1"
+name = "philips_hue_client"
+version = "0.4.0"
 authors = [
+  "Mathieu Poumeyrol <kali@zoy.org>",
   "Bjarke Sørensen <bs@wasd.dk>",
-  "Lucas Falch Sørensen <lucas@wasd.dk>"
+  "Lucas Falch Sørensen <lucas@wasd.dk>",
+  "Joost Yervante Damad <joost@damad.be>"
 ]
 description = "Rust library for Philips Hue lights"
-homepage = "http://www.orangenose.com/products/philipshue/"
-repository = "http://github.com/Orangenosecom/philipshue"
+homepage = "https://github.com/andete/philipshue"
+repository = "https://github.com/andete/philipshue"
 readme = "README.md"
 license = "MIT"
 keywords = [ "Philips", "hue", "light", "bulb" ]
