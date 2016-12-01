@@ -19,12 +19,17 @@ exclude = [
 ]
 build = "build.rs"
 
+[features]
+default = ["serde_codegen"]
+unstable = ["serde_derive"]
+
 [build-dependencies]
-serde_codegen = "0.8"
+serde_codegen = { version = "0.8", optional = true }
 
 [dependencies]
 regex = "0.1.17"
 serde = "0.8"
+serde_derive = { version = "0.8", optional = true }
 serde_json = "0.8"
 lazy_static = "0.2.1"
 
