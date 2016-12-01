@@ -6,6 +6,8 @@
 #[cfg(feature = "serde_derive")]
 #[macro_use]
 extern crate serde_derive;
+#[cfg(feature = "ssdp")]
+extern crate ssdp;
 
 extern crate serde;
 extern crate serde_json;

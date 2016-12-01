@@ -14,6 +14,26 @@ pub fn discover() -> Result<Vec<Discovery>, HueError> {
         .map_err(HueError::from)
         .and_then(|ref mut r| from_reader(r).map_err(From::from))
 }
+/// Discover bridge IP using UPnP
+///
+/// Waits for about 5 seconds to make sure it gets a response
+#[cfg(feature = "ssdp")]
+pub fn discover_upnp() -> Result<Vec<String>, ::ssdp::SSDPError>{
+    use ssdp::header::{HeaderMut, Man, MX, ST};
+    use ssdp::message::SearchRequest;
+    use ssdp::FieldMap;
+
+    let mut request = SearchRequest::new();
+
+    request.set(Man);
+    request.set(MX(5));
+    request.set(ST::Target(FieldMap::upnp("IpBridge")));
+
+    request.multicast().map(|r| r
+        .into_iter()
+        .map(|(_, src)| src.ip().to_string())
+        .collect())
+}
 
 /// Tries to register a user, returning the username if successful
 ///
