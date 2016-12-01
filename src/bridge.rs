@@ -17,6 +17,7 @@ pub fn discover() -> Result<Vec<Discovery>, HueError> {
 /// Discover bridge IP using UPnP
 ///
 /// Waits for about 5 seconds to make sure it gets a response
+#[cfg(feature = "ssdp")]
 pub fn discover_upnp() -> Result<Vec<String>, ::ssdp::SSDPError>{
     use ssdp::header::{HeaderMut, Man, MX, ST};
     use ssdp::message::SearchRequest;
