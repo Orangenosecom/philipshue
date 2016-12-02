@@ -57,27 +57,23 @@ fn main() {
 
             let rgb: Vec<u8> = [caps.at(1), caps.at(2), caps.at(3)].iter().map(|s| u8::from_str_radix(s.unwrap(), 16).unwrap()).collect();
             let (hue, sat, bri) = rgb_to_hsv(rgb[0], rgb[1], rgb[2]);
-            println!("{:?}", (hue, sat, bri));
             light_command.with_hue(hue).with_sat(sat).with_bri(bri)
         }
         _ => panic!("can not understand command {:?}", command),
     };
-    let mut bridge_lights = bridge.get_lights().unwrap();
 
-    for light in bridge_lights.iter_mut() {
-        if input_lights.contains(&light.id){
-            match light.set_state(&bridge, parsed){
-                Ok(resps) => for resp in resps.into_iter(){
-                    if let Some(success) = resp.success{
-                        println!("Success: {:?}", success)
-                    }else if let Some(err) = resp.error{
-                        println!("Error: {:?}", err);
-                    }
-                },
-                Err(e) => println!("Error happened trying to send request:\n\t{:?}", e)
-            }
-            std::thread::sleep(Duration::from_millis(50))
+    for &id in input_lights.into_iter() {
+        match bridge.set_light_state(id, parsed){
+            Ok(resps) => for resp in resps.into_iter(){
+                if let Some(success) = resp.success{
+                    println!("Success: {:?}", success)
+                }else if let Some(err) = resp.error{
+                    println!("Error: {:?}", err);
+                }
+            },
+            Err(e) => println!("Error happened trying to send request:\n\t{:?}", e)
         }
+        std::thread::sleep(Duration::from_millis(50))
     }
 }
 

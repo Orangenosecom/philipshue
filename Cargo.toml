@@ -1,7 +1,7 @@
 [package]
 
 name = "philips_hue_client"
-version = "0.4.0"
+version = "0.4.1"
 authors = [
   "Mathieu Poumeyrol <kali@zoy.org>",
   "Bjarke Sørensen <bs@wasd.dk>",
@@ -14,16 +14,28 @@ repository = "https://github.com/andete/philips_hue_client"
 readme = "README.md"
 license = "MIT"
 keywords = [ "Philips", "hue", "light", "bulb" ]
+exclude = [
+    ".gitignore",
+    ".travis.yml",
+    "appveyor.yml"
+]
 build = "build.rs"
 
+[features]
+default = ["serde_codegen"]
+upnp = ["ssdp"]
+unstable = ["serde_derive", "upnp"]
+
 [build-dependencies]
-serde_codegen = "0.8"
+serde_codegen = { version = "0.8", optional = true }
 
 [dependencies]
 regex = "0.1.17"
 serde = "0.8"
+serde_derive = { version = "0.8", optional = true }
 serde_json = "0.8"
 lazy_static = "0.2.1"
+ssdp = { version = "0.3", optional = true }
 
 [dependencies.hyper]
 version = "0.9.11"
