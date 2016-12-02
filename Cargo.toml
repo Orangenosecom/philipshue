@@ -21,7 +21,8 @@ build = "build.rs"
 
 [features]
 default = ["serde_codegen"]
-unstable = ["serde_derive", "ssdp"]
+upnp = ["ssdp"]
+unstable = ["serde_derive", "upnp"]
 
 [build-dependencies]
 serde_codegen = { version = "0.8", optional = true }
