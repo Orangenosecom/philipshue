@@ -160,7 +160,7 @@ impl Bridge {
     /// Makes the bridge search for new lights (and switches).
     ///
     /// The found lights can be retrieved with `get_new_lights()`
-    pub fn search_for_new_lights(&self) -> Result<(), HueError> {
+    pub fn search_for_new_lights(&self) -> Result<Vec<HueResponse<Value>>, HueError> {
         // TODO Allow deviceids to be specified
         send(self.client.post(&format!("{}lights", self.url)))
     }
@@ -169,13 +169,13 @@ impl Bridge {
         send_with_body(self.client.put(&format!("{}lights/{}/state", self.url, id)), &clean_json(to_string(&command)?))
     }
     /// Renames the light
-    pub fn rename_light(&self, id: usize, name: String) -> Result<(), HueError> {
+    pub fn rename_light(&self, id: usize, name: String) -> Result<Vec<HueResponse<Value>>, HueError> {
         let mut name_map = Map::new();
         name_map.insert("name".to_owned(), name);
         send_with_body(self.client.put(&format!("{}lights/{}", self.url, id)), &clean_json(to_string(&name_map)?))
     }
     /// Deletes a light from the bridge
-    pub fn delete_light(&self, id: usize) -> Result<(), HueError> {
+    pub fn delete_light(&self, id: usize) -> Result<Vec<HueResponse<Value>>, HueError> {
         send(self.client.delete(&format!("{}lights/{}", self.url, id)))
     }
 }
