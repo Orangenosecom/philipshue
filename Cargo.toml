@@ -1,7 +1,7 @@
 [package]
 
 name = "philips_hue_client"
-version = "0.4.1"
+version = "0.4.2"
 authors = [
   "Mathieu Poumeyrol <kali@zoy.org>",
   "Bjarke Sørensen <bs@wasd.dk>",
@@ -24,7 +24,7 @@ build = "build.rs"
 [features]
 default = ["serde_codegen"]
 upnp = ["ssdp"]
-unstable = ["serde_derive", "upnp"]
+nightly = ["serde_derive", "upnp"]
 
 [build-dependencies]
 serde_codegen = { version = "0.8", optional = true }
@@ -41,3 +41,10 @@ ssdp = { version = "0.3", optional = true }
 version = "0.9.11"
 default-features = false
 features = ["ssl", "serde-serialization"]
+
+# build with default:
+# cargo build
+
+# build with nightly:
+# cargo build --features nightly --no-default-features
+

@@ -1,8 +1,8 @@
-extern crate philipshue;
+extern crate philips_hue_client;
 
 #[cfg(feature = "ssdp")]
 fn main() {
-    use philipshue::bridge;
+    use philips_hue_client::bridge;
     let mut ips = bridge::discover_upnp().unwrap();
     ips.dedup();
 
