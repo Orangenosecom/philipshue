@@ -3,67 +3,58 @@ extern crate regex;
 
 use std::env;
 use std::time::Duration;
-use regex::Regex;
+use std::num::ParseIntError;
 
 use philips_hue_client::hue::LightCommand;
 use philips_hue_client::bridge::{discover, Bridge};
 
-fn main() {
+fn main(){
+    match run(){
+        Ok(()) => (),
+        Err(_) => println!("Invalid number!")
+    }
+}
+
+fn run() -> Result<(), ParseIntError> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 4 {
-        println!("usage : {:?} <username> <light_id>,<light_id>,... on|off|[bri]:[hue]:[sat]|[ct]MK:[bri]|[w]K:[bri]|[RR][GG][BB]:[bri]",
+        println!("Usage: {} <username> <light_id>,<light_id>,... on|off|bri <bri>|hue <hue>|sat <sat>|rgb <r> <g> <b>|hsv <hue> <sat> <bri>|mired <ct> <bri>|kelvin <temp> <bri>",
                  args[0]);
-        return;
+        return Ok(());
     }
     let bridge = Bridge::new(discover().unwrap().pop().unwrap().into_ip(), &*args[1]);
-    let ref input_lights: Vec<usize> = args[2].split(",").map(|s| s.parse::<usize>().unwrap()).collect();
-    let ref command = args[3];
-    let re_triplet = Regex::new("([0-9]{0,3}):([0-9]{0,5}):([0-9]{0,3})").unwrap();
-    let re_mired = Regex::new("([0-9]{0,4})MK:([0-9]{0,5})").unwrap();
-    let re_kelvin = Regex::new("([0-9]{4,4})K:([0-9]{0,5})").unwrap();
-    let re_rrggbb = Regex::new("([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
+    let input_lights = args[2].split(",").fold(Ok(Vec::new()), |v, s| v.and_then(|mut v| s.parse::<usize>().map(|n| v.push(n)).map(|_| v)))?;
 
-    let mut light_command = LightCommand::default();
+    let cmd = LightCommand::default();
 
-    let parsed = match &command[..] {
-        "on" => light_command.on(),
-        "off" => light_command.off(),
-        _ if re_triplet.is_match(&command) => {
-            let caps = re_triplet.captures(&command).unwrap();
-
-            light_command.bri = caps.at(1).and_then(|s| s.parse::<u8>().ok());
-            light_command.hue = caps.at(2).and_then(|s| s.parse::<u16>().ok());
-            light_command.sat = caps.at(3).and_then(|s| s.parse::<u8>().ok());
-            light_command
-        }
-        _ if re_mired.is_match(&command) => {
-            let caps = re_mired.captures(&command).unwrap();
-
-            light_command.ct = caps.at(1).and_then(|s| s.parse::<u16>().ok());
-            light_command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
-            light_command.sat = Some(254);
-            light_command
-        }
-        _ if re_kelvin.is_match(&command) => {
-            let caps = re_kelvin.captures(&command).unwrap();
-
-            light_command.ct = caps.at(1).and_then(|s| s.parse::<u32>().ok().map(|k| (1000000u32 / k) as u16));
-            light_command.bri = caps.at(2).and_then(|s| s.parse::<u8>().ok());
-            light_command.sat = Some(254);
-            light_command
-        }
-        _ if re_rrggbb.is_match(&command) => {
-            let caps = re_rrggbb.captures(&command).unwrap();
-
-            let rgb: Vec<u8> = [caps.at(1), caps.at(2), caps.at(3)].iter().map(|s| u8::from_str_radix(s.unwrap(), 16).unwrap()).collect();
-            let (hue, sat, bri) = rgb_to_hsv(rgb[0], rgb[1], rgb[2]);
-            light_command.with_hue(hue).with_sat(sat).with_bri(bri)
-        }
-        _ => panic!("can not understand command {:?}", command),
+    let cmd = match &*args[3]{
+        "on" => cmd.on(),
+        "off" => cmd.off(),
+        "bri" => cmd.with_bri(args[4].parse()?),
+        "hue" => cmd.with_hue(args[4].parse()?),
+        "sat" => cmd.with_sat(args[4].parse()?),
+        "hsv" => cmd
+            .with_hue(args[4].parse()?)
+            .with_sat(args[5].parse()?)
+            .with_bri(args[6].parse()?),
+        "rgb" => {
+            let (hue, sat, bri) = rgb_to_hsv(args[4].parse()?,
+                args[5].parse()?, args[6].parse()?);
+            cmd.with_hue(hue).with_sat(sat).with_bri(bri)
+        },
+        "mired" => cmd
+            .with_ct(args[4].parse()?)
+            .with_bri(args[5].parse()?)
+            .with_sat(254),
+        "kelvin" => cmd
+            .with_ct((1000000u32 / args[4].parse::<u32>()?) as u16)
+            .with_bri(args[5].parse()?)
+            .with_sat(254),
+        _ => panic!("Invalid command!")
     };
 
-    for &id in input_lights.into_iter() {
-        match bridge.set_light_state(id, parsed){
+    for id in input_lights.into_iter() {
+        match bridge.set_light_state(id, &cmd){
             Ok(resps) => for resp in resps.into_iter(){
                 if let Some(success) = resp.success{
                     println!("Success: {:?}", success)
@@ -75,8 +66,9 @@ fn main() {
         }
         std::thread::sleep(Duration::from_millis(50))
     }
-}
 
+    Ok(())
+}
 
 fn rgb_to_hsv(r: u8, g: u8, b: u8) -> (u16, u8, u8) {
     let r = r as f64 / 255f64;

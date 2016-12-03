@@ -34,7 +34,6 @@ pub fn discover_upnp() -> Result<Vec<String>, ::ssdp::SSDPError>{
         .map(|(_, src)| src.ip().to_string())
         .collect())
 }
-
 /// Tries to register a user, returning the username if successful
 ///
 /// This usually returns a `HueError::BridgeError` saying the link button needs to be pressed.
@@ -165,8 +164,8 @@ impl Bridge {
         send(self.client.post(&format!("{}lights", self.url)))
     }
     /// Sets the state of a light by sending a `LightCommand` to the bridge for this light
-    pub fn set_light_state(&self, id: usize, command: LightCommand) -> Result<Vec<HueResponse<Value>>, HueError>{
-        send_with_body(self.client.put(&format!("{}lights/{}/state", self.url, id)), &clean_json(to_string(&command)?))
+    pub fn set_light_state(&self, id: usize, command: &LightCommand) -> Result<Vec<HueResponse<Value>>, HueError>{
+        send_with_body(self.client.put(&format!("{}lights/{}/state", self.url, id)), &clean_json(to_string(command)?))
     }
     /// Renames the light
     pub fn rename_light(&self, id: usize, name: String) -> Result<Vec<HueResponse<Value>>, HueError> {
