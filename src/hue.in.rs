@@ -165,6 +165,61 @@ impl Display for GroupType {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[allow(missing_docs)]
+/// Class of the room of a group supported by the Hue API
+pub enum RoomClass{
+    #[serde(rename = "Living room")]
+    LivingRoom,
+    Kitchen,
+    Dining,
+    Bedroom,
+    #[serde(rename = "Kids bedroom")]
+    KidsBedroom,
+    Bathroom,
+    Nursery,
+    Recreation,
+    Office,
+    Gym,
+    Hallway,
+    Toilet,
+    #[serde(rename = "Front door")]
+    FrontDoor,
+    Garage,
+    Terrace,
+    Garden,
+    Driveway,
+    Carport,
+    Other
+}
+
+impl Display for RoomClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::RoomClass::*;
+        match *self{
+            LivingRoom => "Living room",
+            Kitchen => "Kitchen",
+            Dining => "Dining",
+            Bedroom => "Bedroom",
+            KidsBedroom => "Kids bedroom",
+            Bathroom => "Bathroom",
+            Nursery => "Nursery",
+            Recreation => "Recreation",
+            Office => "Office",
+            Gym => "Gym",
+            Hallway => "Hallway",
+            Toilet => "Toilet",
+            FrontDoor => "Front door",
+            Garage => "Garage",
+            Terrace => "Terrace",
+            Garden => "Garden",
+            Driveway => "Driveway",
+            Carport => "Carport",
+            Other => "Other"
+        }.fmt(f)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// A reprensentation of a Hue group of lights
 pub struct Group {
@@ -181,9 +236,8 @@ pub struct Group {
     pub action: Option<LightState>,
     /// State reprensentation of the group
     pub state: Option<GroupState>,
-    // TODO should probably also be an enum
     /// The class of the room, if the type of the group is `Room`
-    pub class: Option<String>
+    pub class: Option<RoomClass>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

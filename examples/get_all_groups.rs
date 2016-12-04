@@ -27,6 +27,7 @@ fn main() {
                          group.lights,
                          name_len = name_len, type_len = type_len);
             }
+            println!("{:#?}", groups);
         }
         Err(err) => panic!("{:?}", err),
     }
