@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// The state of the light with similar structure to `LightCommand`
@@ -227,7 +227,6 @@ pub struct Group {
     pub name: String,
     /// IDs of all the lights in this group
     pub lights: Vec<usize>,
-    // TODO should probably be an enum
     #[serde(rename="type")]
     /// Type of the group
     pub group_type: GroupType,
@@ -237,6 +236,17 @@ pub struct Group {
     /// State reprensentation of the group
     pub state: Option<GroupState>,
     /// The class of the room, if the type of the group is `Room`
+    pub class: Option<RoomClass>
+}
+
+#[derive(Debug, Clone, Serialize)]
+/// Attributes of a group to be changed using `set_group_attributes()`
+pub struct GroupCommand {
+    /// The new name for the group.
+    pub name: Option<String>,
+    /// IDs of all the lights that should be in the group.
+    pub lights: Vec<usize>,
+    /// The class of the room. Default is `Other`.
     pub class: Option<RoomClass>
 }
 
@@ -282,18 +292,50 @@ impl Discovery {
 
 #[derive(Debug, Deserialize)]
 /// A response that either is an error or a success
-pub struct HueResponse<T: Serialize + Deserialize>{
+pub struct HueResponse<T: Deserialize>{
     /// The result from the bridge if it didn't fail
     pub success: Option<T>,
     /// The error that was returned from the bridge
     pub error: Option<Error>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+use ::errors::HueError;
+
+impl<T: Deserialize> Into<Result<T, HueError>> for HueResponse<T> {
+    fn into(self) -> Result<T, HueError> {
+        if let Some(t) = self.success{
+            Ok(t)
+        }else if let Some(error) = self.error{
+            Err(error.into())
+        }else{
+            Err(HueError::MalformedResponse)
+        }
+    }
+}
+
+impl<T: Deserialize> HueResponse<T> {
+    /// Maps the success object of the response
+    pub fn map<U: Deserialize, F: FnOnce(T) -> U>(self, f: F) -> HueResponse<U> {
+        let HueResponse{success, error} = self;
+        HueResponse{
+            success: success.map(f),
+            error: error
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 /// A user object returned from the API
 pub struct User{
     /// The username of the user
     pub username: String
+}
+
+#[derive(Debug, Deserialize)]
+/// An object containing the ID of a newly created Group
+pub struct GroupId{
+    /// The ID of the group
+    pub id: usize
 }
 
 #[derive(Debug, Deserialize)]

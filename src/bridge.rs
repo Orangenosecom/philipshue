@@ -175,4 +175,38 @@ impl Bridge {
     pub fn get_all_groups(&self) -> Result<Map<usize, Group>, HueError>{
         send(self.client.get(&format!("{}groups", self.url)))
     }
+    /// Creates a group and returns the ID of the group
+    pub fn create_group(&self, name: String, lights: Vec<usize>, group_type: GroupType, room_class: Option<RoomClass>) -> Result<usize, HueError> {
+        let g = Group {
+            name: name,
+            lights: lights,
+            group_type: group_type,
+            class: room_class,
+            state: None,
+            action: None
+        };
+        let r: HueResponse<GroupId> = send_with_body(self.client.post(&format!("{}groups", self.url)),
+            &clean_json(to_string(&g)?))?;
+        Into::<Result<_, _>>::into(r).map(|g| g.id)
+    }
+    /// Gets extra information about a specific group
+    pub fn get_group_attributes(&self, id: usize) -> Result<Group, HueError> {
+        send(self.client.get(&format!("{}groups/{}", self.url, id)))
+    }
+    /// Set the name, light and class of a group
+    pub fn set_group_attributes(&self, id: usize, attr: &GroupCommand) -> Result<Vec<HueResponse<Value>>, HueError> {
+        send_with_body(self.client.put(&format!("{}groups/{}", self.url, id)), &clean_json(to_string(attr)?))
+    }
+    /// Sets the state of all lights in the group.
+    ///
+    /// ID 0 is a sepcial group containing all lights known to the bridge
+    pub fn set_group_state(&self, id: usize, state: &LightCommand) -> Result<Vec<HueResponse<Value>>, HueError> {
+        send_with_body(self.client.put(&format!("{}groups/{}/action", self.url, id)), &clean_json(to_string(state)?))
+    }
+    /// Deletes the specified group
+    ///
+    /// It's not allowed to delete groups of type `LightSource` or `Luminaire`.
+    pub fn delete_group(&self, id: usize) -> Result<Vec<HueResponse<Value>>, HueError> {
+        send(self.client.delete(&format!("{}groups/{}", self.url, id)))
+    }
 }
