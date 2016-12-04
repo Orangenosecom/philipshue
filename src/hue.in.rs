@@ -24,7 +24,7 @@ pub struct LightState {
     /// The current colour mode either: "hs" for hue and saturation, "xy" for x and y coordinates in colour space, or "ct" for colour temperature
     pub colormode: Option<String>,
     /// Whether the light can be reached by the bridge
-    pub reachable: Option<bool>,
+    pub reachable: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -42,7 +42,7 @@ pub struct Light {
     pub state: LightState
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Struct for building a command that will be sent to the Hue bridge telling it what to do with a light
 ///
 /// View [the lights-api documention](http://www.developers.meethue.com/documentation/lights-api) for more information
@@ -231,8 +231,8 @@ pub struct Group {
     /// Type of the group
     pub group_type: GroupType,
     // Actually just a `LightState` without the `reachable` field
-    /// The `LightState` applied to all lights in the group
-    pub action: Option<LightState>,
+    /// The `LightCommand` applied to all lights in the group
+    pub action: Option<LightCommand>,
     /// State reprensentation of the group
     pub state: Option<GroupState>,
     /// The class of the room, if the type of the group is `Room`
