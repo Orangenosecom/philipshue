@@ -1,11 +1,7 @@
-# philips_hue_client
+# philipshue
 
-<<<<<<< HEAD
-[![Build Status](https://travis-ci.org/andete/philips_hue_client.svg?branch=master)](https://travis-ci.org/andete/philips_hue_client)
-=======
 [![Build Status](https://travis-ci.org/Orangenosecom/philipshue.svg?branch=master)](https://travis-ci.org/Orangenosecom/philipshue)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/Orangenosecom/philipshue?branch=master&svg=true)](https://ci.appveyor.com/project/Orangenosecom/philipshue)
->>>>>>> 9f30d2a3cdd49154f5929f6e3d3d4b231e60aef0
 
 Library for interacting with the Hue API in order to manipulate Hue lights.
 

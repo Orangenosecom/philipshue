@@ -1,6 +1,6 @@
-extern crate philips_hue_client;
+extern crate philipshue;
 use std::env;
-use philips_hue_client::bridge::{discover, Bridge};
+use philipshue::bridge::{discover, Bridge};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

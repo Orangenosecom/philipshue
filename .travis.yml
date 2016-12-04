@@ -7,3 +7,23 @@ rust:
 matrix:
   allow_failures:
   - rust: nightly
+env:
+  global:
+    secure: j62pGcdMjG8TgEcnEkDEM1eT+LMfjQWxZwwkxC1FFJZNDVyet2MZ0wzHr21kEWTld1OExIDvzxnrJRrqGFnZWzITf+fJs3NoR5lexa+Rif1A6uluhDVOZcF34rOgDbLEUyw0mnj5MnFLaclv/oJek4wBYLZoSRP6+OmlTA7999cDOupjbWr764P85lBiToY3PnTVshI/L7cHpICunwtR1T/XBRC1qLvtyG5T/938oRA1mjR+/wJPinXcT8ds91iDm+WOQs1LxTdhh9J9zKQQgR2M3v2VvPv9M1oPw2AvRTew2Q1fPX+X8HDkaFhE8gtftb3sSFunUEOT9vluzPmjM7BQzYXMmOgRqX4dHEe/VUF9Xqe7vIkOM9WJu39cuw7jHUDO9xLh/RqoaRlFqVT1H3QUbCy5OgFbOkk0OrnTmjcYT2ObyVhuwEW5Gk8OqFf9Ogc53+3ymXJjPXzO48/aXekSilLboEvFv2gJPdf4X5w2PCGcLszL0uKeheoWPzWKMh7yX67k+FZ58/xi1oeIBoC8TceLQ/NFvEwwI/EBlCKHt+EibEsTY8me6lyo1Zb9VveYWSu9iy7C6+eNjzTfKC7GcyXmT2upP3Bz9mMX+IN8BoyM81BiXllBtCBoZr7UKqMTu0Xrp3zWZSeUAc+0qCHq4UIc7Cw9M/T/7yzdNr4=
+script:
+- |
+  cargo update -v &&
+  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+    (cargo test -v --no-default-features --features unstable)
+  else
+    (cargo test -v)
+  fi
+after_success:
+- |
+  [ $TRAVIS_RUST_VERSION = stable ] &&
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo publish --token ${CRATESIO_TOKEN}
+notifications:
+  slack:
+    secure: YZlLJTeRb6MTd3xooYYh9zyPz0PA3RpCfcHmoNq1UIGINUPL13cGiY8Ppf/Ug45K3+8Siox2PrhWp1IX55/UdkCDLjbD0zYKO8Xq9S2NHWKcxyssUJkVgwPp4Zc/+70z0QNN36jaiIgrYcfsOPbRTAO34WJ1yZKuQxIqEKOn73hVBpAgKl3NagkWzFh2s+n+Tu12otI3ZYhDqEt+Sm4b99EorkFcoVtE1YqFYiZvJmooe8R4ym5gkwkz/7kqS1I7MY83eUStlBvSfbn9DcUKykFsrqa+j86BNSu39dx3jDqzE4pBWYD5vzYPvcZQUB2yADc3hHdEX4np12eFrGaCzyntRHr+zmiovUQ8b/8m7MXoJzTDtuJdAHAVH3WksTVF5kmhP9DPCE9L/OsrjE48Ktu5oJ9czXDwYaf6BbNPZgyjCuiBidBui/4LNjOocNu1cqpMNRRSynM3eXY9T7n910VEn3ooBtca+RGmURambZpz2XTd4cJmGy3QS5VZmPG+oCOVj9cC7EnTc6Kxb7/bPpg7ahl0nenSu1XfXvdI2Ac9qbkc1UGIM8vLV7cZAkF2iQLfSDmMD0t53HkkEfsgAkwAuJoRRynkXqXxrGCjF42vSVR3qbZMHLqerjZZVxRMO2G4z3gVMbRrWacw1cSZ3lcZS5wQj2Iv7LNDHR/wqDw=

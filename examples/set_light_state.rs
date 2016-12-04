@@ -1,12 +1,12 @@
-extern crate philips_hue_client;
+extern crate philipshue;
 extern crate regex;
 
 use std::env;
 use std::time::Duration;
 use std::num::ParseIntError;
 
-use philips_hue_client::hue::LightCommand;
-use philips_hue_client::bridge::{discover, Bridge};
+use philipshue::hue::LightCommand;
+use philipshue::bridge::{discover, Bridge};
 
 fn main(){
     match run(){
