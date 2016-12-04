@@ -1,16 +1,16 @@
 [package]
 
-name = "philips_hue_client"
-version = "0.4.3"
+name = "philipshue"
+version = "0.0.3"
 authors = [
   "Mathieu Poumeyrol <kali@zoy.org>",
   "Bjarke Sørensen <bs@wasd.dk>",
-  "Lucas Falch Sørensen <lucas@wasd.dk>",
-  "Joost Yervante Damad <joost@damad.be>"
+  "Lucas Falch Sørensen <lucas@wasd.dk>"
 ]
 description = "Rust library for Philips Hue lights"
-homepage = "https://github.com/andete/philips_hue_client"
-repository = "https://github.com/andete/philips_hue_client"
+documentation = "http://docs.rs/philipshue/"
+homepage = "http://www.orangenose.com/products/philipshue/"
+repository = "http://github.com/Orangenosecom/philipshue"
 readme = "README.md"
 license = "MIT"
 keywords = [ "Philips", "hue", "light", "bulb" ]
@@ -24,7 +24,7 @@ build = "build.rs"
 [features]
 default = ["serde_codegen"]
 upnp = ["ssdp"]
-nightly = ["serde_derive", "upnp"]
+unstable = ["serde_derive", "upnp"]
 
 [build-dependencies]
 serde_codegen = { version = "0.8", optional = true }
@@ -41,10 +41,3 @@ ssdp = { version = "0.3", optional = true }
 version = "0.9.11"
 default-features = false
 features = ["ssl", "serde-serialization"]
-
-# build with default:
-# cargo build
-
-# build with nightly:
-# cargo build --features nightly --no-default-features
-
