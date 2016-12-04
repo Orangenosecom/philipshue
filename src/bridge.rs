@@ -90,15 +90,6 @@ pub fn register_user(ip: &str, devicetype: &str) -> Result<String, HueError>{
     }
 }
 
-#[derive(Debug, Clone)]
-/// A light with an ID
-pub struct IdentifiedLight {
-    /// The ID number of this light
-    pub id: usize,
-    /// The light object
-    pub light: Light,
-}
-
 #[derive(Debug)]
 /// The bridge connection
 pub struct Bridge {
@@ -176,5 +167,12 @@ impl Bridge {
     /// Deletes a light from the bridge
     pub fn delete_light(&self, id: usize) -> Result<Vec<HueResponse<Value>>, HueError> {
         send(self.client.delete(&format!("{}lights/{}", self.url, id)))
+    }
+
+    // GROUPS
+
+    /// Gets all groups of the bridge
+    pub fn get_all_groups(&self) -> Result<Map<usize, Group>, HueError>{
+        send(self.client.get(&format!("{}groups", self.url)))
     }
 }

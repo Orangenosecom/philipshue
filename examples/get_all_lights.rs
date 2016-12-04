@@ -26,7 +26,7 @@ fn main() {
                          light.state.alert,
                          Show(&light.state.effect),
                          Show(&light.state.colormode),
-                         light.state.reachable,
+                         Show(&light.state.reachable),
                          Show(&light.state.xy),
                          name_len = max_name_len);
             }

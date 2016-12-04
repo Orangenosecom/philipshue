@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// The state of the light with similar structure to `LightCommand`
 pub struct LightState {
     /// Whether the light is on
@@ -24,7 +24,7 @@ pub struct LightState {
     /// The current colour mode either: "hs" for hue and saturation, "xy" for x and y coordinates in colour space, or "ct" for colour temperature
     pub colormode: Option<String>,
     /// Whether the light can be reached by the bridge
-    pub reachable: bool,
+    pub reachable: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,6 +75,8 @@ pub struct LightCommand {
     pub ct_inc: Option<i16>,
     /// Increments or decrements the value of the xy.
     pub xy_inc: Option<(i16, i16)>,
+    /// The scene identifier to be called (only for used groups)
+    pub scene: Option<String>
 }
 
 impl LightCommand {
@@ -134,6 +136,69 @@ impl LightCommand {
     pub fn with_xy_inc(self, xy: (i16, i16)) -> Self {
         LightCommand { xy_inc: Some(xy), ..self }
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Type of a group
+pub enum GroupType{
+    /// Multisource luminaire group.
+    Luminaire,
+    /// A sub group of multisource luminaire lights.
+    LightSource,
+    /// A simple group of lights that can be controlled together.
+    LightGroup,
+    /// A group of lights that are physically in the same room.
+    Room
+}
+
+use std::fmt::{self, Display};
+
+impl Display for GroupType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::GroupType::*;
+        match *self{
+            Luminaire => "Luminaire",
+            LightSource => "LightSource",
+            LightGroup => "LightGroup",
+            Room => "Room"
+        }.fmt(f)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A reprensentation of a Hue group of lights
+pub struct Group {
+    /// Name of the group. (Default name is "Group").
+    pub name: String,
+    /// IDs of all the lights in this group
+    pub lights: Vec<usize>,
+    // TODO should probably be an enum
+    #[serde(rename="type")]
+    /// Type of the group
+    pub group_type: GroupType,
+    // Actually just a `LightState` without the `reachable` field
+    /// The `LightState` applied to all lights in the group
+    pub action: Option<LightState>,
+    /// State reprensentation of the group
+    pub state: Option<GroupState>,
+    // TODO should probably also be an enum
+    /// The class of the room, if the type of the group is `Room`
+    pub class: Option<String>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// State reprensentation of the group
+pub struct GroupState {
+    /// `false` if all lamps are off, `true` otherwise.
+    pub any_on: bool,
+    /// `true` only if all lamps are on.
+    pub all_on: bool,
+    /// The average brightness of the group.
+    pub bri: Option<u8>,
+    /// Last time the state of at least one light in the group was changed.
+    pub lastupdated: Option<String>,
+    /// Last time the group was turned on or off.
+    pub lastswitched: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
