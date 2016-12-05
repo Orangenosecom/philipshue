@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// The state of the light with similar structure to `LightCommand`
 pub struct LightState {
     /// Whether the light is on
@@ -42,7 +42,7 @@ pub struct Light {
     pub state: LightState
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Struct for building a command that will be sent to the Hue bridge telling it what to do with a light
 ///
 /// View [the lights-api documention](http://www.developers.meethue.com/documentation/lights-api) for more information
@@ -75,6 +75,8 @@ pub struct LightCommand {
     pub ct_inc: Option<i16>,
     /// Increments or decrements the value of the xy.
     pub xy_inc: Option<(i16, i16)>,
+    /// The scene identifier to be called (only for used groups)
+    pub scene: Option<String>
 }
 
 impl LightCommand {
@@ -136,6 +138,133 @@ impl LightCommand {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Type of a group
+pub enum GroupType{
+    /// Multisource luminaire group.
+    Luminaire,
+    /// A sub group of multisource luminaire lights.
+    LightSource,
+    /// A simple group of lights that can be controlled together.
+    LightGroup,
+    /// A group of lights that are physically in the same room.
+    Room
+}
+
+use std::fmt::{self, Display};
+
+impl Display for GroupType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::GroupType::*;
+        match *self{
+            Luminaire => "Luminaire",
+            LightSource => "LightSource",
+            LightGroup => "LightGroup",
+            Room => "Room"
+        }.fmt(f)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[allow(missing_docs)]
+/// Class of the room of a group supported by the Hue API
+pub enum RoomClass{
+    #[serde(rename = "Living room")]
+    LivingRoom,
+    Kitchen,
+    Dining,
+    Bedroom,
+    #[serde(rename = "Kids bedroom")]
+    KidsBedroom,
+    Bathroom,
+    Nursery,
+    Recreation,
+    Office,
+    Gym,
+    Hallway,
+    Toilet,
+    #[serde(rename = "Front door")]
+    FrontDoor,
+    Garage,
+    Terrace,
+    Garden,
+    Driveway,
+    Carport,
+    Other
+}
+
+impl Display for RoomClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::RoomClass::*;
+        match *self{
+            LivingRoom => "Living room",
+            Kitchen => "Kitchen",
+            Dining => "Dining",
+            Bedroom => "Bedroom",
+            KidsBedroom => "Kids bedroom",
+            Bathroom => "Bathroom",
+            Nursery => "Nursery",
+            Recreation => "Recreation",
+            Office => "Office",
+            Gym => "Gym",
+            Hallway => "Hallway",
+            Toilet => "Toilet",
+            FrontDoor => "Front door",
+            Garage => "Garage",
+            Terrace => "Terrace",
+            Garden => "Garden",
+            Driveway => "Driveway",
+            Carport => "Carport",
+            Other => "Other"
+        }.fmt(f)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A reprensentation of a Hue group of lights
+pub struct Group {
+    /// Name of the group. (Default name is "Group").
+    pub name: String,
+    /// IDs of all the lights in this group
+    pub lights: Vec<usize>,
+    #[serde(rename="type")]
+    /// Type of the group
+    pub group_type: GroupType,
+    // Actually just a `LightState` without the `reachable` field
+    /// The `LightCommand` applied to all lights in the group
+    pub action: Option<LightCommand>,
+    /// State reprensentation of the group
+    pub state: Option<GroupState>,
+    /// The class of the room, if the type of the group is `Room`
+    pub class: Option<RoomClass>
+}
+
+#[derive(Debug, Clone, Serialize)]
+/// Attributes of a group to be changed using `set_group_attributes()`
+pub struct GroupCommand {
+    /// The new name for the group.
+    pub name: Option<String>,
+    /// IDs of all the lights that should be in the group.
+    pub lights: Vec<usize>,
+    /// The class of the room. Default is `Other`.
+    pub class: Option<RoomClass>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// State reprensentation of the group
+pub struct GroupState {
+    /// `false` if all lamps are off, `true` otherwise.
+    pub any_on: bool,
+    /// `true` only if all lamps are on.
+    pub all_on: bool,
+    /// The average brightness of the group.
+    pub bri: Option<u8>,
+    /// Last time the state of at least one light in the group was changed.
+    pub lastupdated: Option<String>,
+    /// Last time the group was turned on or off.
+    pub lastswitched: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 /// Responses from the `discover` function
 pub struct Discovery{
@@ -163,18 +292,50 @@ impl Discovery {
 
 #[derive(Debug, Deserialize)]
 /// A response that either is an error or a success
-pub struct HueResponse<T: Serialize + Deserialize>{
+pub struct HueResponse<T: Deserialize>{
     /// The result from the bridge if it didn't fail
     pub success: Option<T>,
     /// The error that was returned from the bridge
     pub error: Option<Error>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+use ::errors::HueError;
+
+impl<T: Deserialize> Into<Result<T, HueError>> for HueResponse<T> {
+    fn into(self) -> Result<T, HueError> {
+        if let Some(t) = self.success{
+            Ok(t)
+        }else if let Some(error) = self.error{
+            Err(error.into())
+        }else{
+            Err(HueError::MalformedResponse)
+        }
+    }
+}
+
+impl<T: Deserialize> HueResponse<T> {
+    /// Maps the success object of the response
+    pub fn map<U: Deserialize, F: FnOnce(T) -> U>(self, f: F) -> HueResponse<U> {
+        let HueResponse{success, error} = self;
+        HueResponse{
+            success: success.map(f),
+            error: error
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 /// A user object returned from the API
 pub struct User{
     /// The username of the user
     pub username: String
+}
+
+#[derive(Debug, Deserialize)]
+/// An object containing the ID of a newly created Group
+pub struct GroupId{
+    /// The ID of the group
+    pub id: usize
 }
 
 #[derive(Debug, Deserialize)]

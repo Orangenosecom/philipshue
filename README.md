@@ -2,16 +2,19 @@
 
 [![Build Status](https://travis-ci.org/Orangenosecom/philipshue.svg?branch=master)](https://travis-ci.org/Orangenosecom/philipshue)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/Orangenosecom/philipshue?branch=master&svg=true)](https://ci.appveyor.com/project/Orangenosecom/philipshue)
+[![Crates.io](https://img.shields.io/crates/v/philipshue.svg?style=flat-square)](https://crates.io/crates/philipshue)
+![Licence](https://img.shields.io/crates/l/philipshue.svg?style=flat-square)
+[![Docs.rs](https://docs.rs/philipshue/badge.svg)](https://docs.rs/philipshue)
 
-Library for interacting with the Hue API in order to manipulate Hue lights.
+Library for interacting with the Hue API in order to control Hue lights.
 
-The goal of this library is to provide a easy way of interacting with the Hue API.
+The goal of this library is to provide an easy way of interacting with the Hue API using Rust.
 
 ## Current features
 
-- Discover bridge by querying the Philips Hue website
-- Find all lights connected to a bridge
-- Simple actions on the lights (e.g. turn on and off and setting the colour)
+- Discovering a bridge by querying the Philips Hue website or via UPnP (currently requires nightly)
+- Finding, manipulating and deleting lights from the bridge
+- Define, get and manipulate groups of lights from the bridge
 
 ## Building
 
