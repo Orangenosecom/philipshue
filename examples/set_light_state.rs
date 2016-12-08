@@ -56,11 +56,7 @@ fn run() -> Result<(), ParseIntError> {
     for id in input_lights.into_iter() {
         match bridge.set_light_state(id, &cmd){
             Ok(resps) => for resp in resps.into_iter(){
-                if let Some(success) = resp.success{
-                    println!("Success: {:?}", success)
-                }else if let Some(err) = resp.error{
-                    println!("Error: {:?}", err);
-                }
+                println!("{:?}", resp)
             },
             Err(e) => println!("Error happened trying to send request:\n\t{:?}", e)
         }

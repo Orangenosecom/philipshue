@@ -3,6 +3,9 @@ use std::convert::From;
 use serde_json::Error as JsonError;
 use std::num::ParseIntError;
 
+/// Handy type alias for a `Result` with `HueError`
+pub type Result<T> = ::std::result::Result<T, HueError>;
+
 #[derive(Debug)]
 /// Wrapper for all errors that can occur in this crate
 pub enum HueError {
@@ -14,6 +17,8 @@ pub enum HueError {
     BridgeError{
         /// The URI the error happened on
         address: String,
+        /// A short description of the error
+        description: String,
         /// The `BridgeError`
         error: BridgeError
     },
@@ -112,10 +117,11 @@ fn bridge_errors() {
     assert_eq!(InternalError as u16, 901);
 }
 
-impl From<::hue::Error> for HueError {
-    fn from(::hue::Error{address, code,..}: ::hue::Error) -> Self {
+impl From<::json::Error> for HueError {
+    fn from(::json::Error{address, code, description}: ::json::Error) -> Self {
         HueError::BridgeError{
             address: address,
+            description: description,
             error: From::from(code)
         }
     }

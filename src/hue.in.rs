@@ -1,5 +1,3 @@
-use serde::{Deserialize};
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// The state of the light with similar structure to `LightCommand`
 pub struct LightState {
@@ -290,62 +288,162 @@ impl Discovery {
     }
 }
 
-#[derive(Debug, Deserialize)]
-/// A response that either is an error or a success
-pub struct HueResponse<T: Deserialize>{
-    /// The result from the bridge if it didn't fail
-    pub success: Option<T>,
-    /// The error that was returned from the bridge
-    pub error: Option<Error>
+pub use serde_json::{Map, Value as JsonValue};
+
+#[derive(Debug, Clone, Deserialize)]
+/// Contains information about what can be updated
+pub struct DeviceTypes {
+    /// Whether there is an update available for the bridge.
+    bridge: bool,
+    /// List of lights to be updated.
+    lights: Vec<Light>,
 }
 
-use ::errors::HueError;
-
-impl<T: Deserialize> Into<Result<T, HueError>> for HueResponse<T> {
-    fn into(self) -> Result<T, HueError> {
-        if let Some(t) = self.success{
-            Ok(t)
-        }else if let Some(error) = self.error{
-            Err(error.into())
-        }else{
-            Err(HueError::MalformedResponse)
-        }
-    }
+#[derive(Debug, Clone, Deserialize)]
+/// Information about software updates on the bridge
+pub struct SoftwareUpdate {
+    /// Lets the bridge search for software updates
+    pub checkforupdate: bool,
+    /// Details about the types of updates available
+    pub devicetypes: DeviceTypes,
+    // FIXME What are those?
+    /// ?
+    pub updatestate: u8,
+    /// ?
+    pub url: String,
+    /// ?
+    pub text: String,
+    /// ?
+    pub notify: bool,
 }
 
-impl<T: Deserialize> HueResponse<T> {
-    /// Maps the success object of the response
-    pub fn map<U: Deserialize, F: FnOnce(T) -> U>(self, f: F) -> HueResponse<U> {
-        let HueResponse{success, error} = self;
-        HueResponse{
-            success: success.map(f),
-            error: error
-        }
-    }
+#[derive(Debug, Clone, Deserialize)]
+/// A user in the whitelist of a `Configuration`
+pub struct WhitelistUser {
+    /// Name of the user. It's what you specify as `devicetype` when registering a user
+    pub name: String,
+    /// Date this user was last used
+    #[serde(rename="last use date")]
+    pub last_use_date: String,
+    /// Date this user was created
+    #[serde(rename="create date")]
+    pub create_date: String,
 }
 
-#[derive(Debug, Deserialize)]
-/// A user object returned from the API
-pub struct User{
-    /// The username of the user
-    pub username: String
+#[derive(Debug, Clone, Deserialize)]
+/// Configuration of the bridge
+pub struct Configuration {
+    /// Name of the bridge. This is also its uPnP name.
+    pub name: String,
+    /// Contains information about software updates
+    pub swupdate: SoftwareUpdate,
+    /// A list of all registered users
+    pub whitelist: Map<String, WhitelistUser>,
+    /// Version of the hue API on the bridge.
+    pub apiversion: String,
+    /// Software version of the bridge
+    pub swversion: String,
+    /// IP Address of the proxy server being used or "none".
+    pub proxyaddress: String,
+    /// Port of the proxy being used or 0 if no proxy is being used
+    pub proxyport: u16,
+    /// Whether the linkbuttion has been preseed within the last 30 seconds.
+    pub linkbutton: bool,
+    /// IP address of the bridge.
+    pub ipaddress: String,
+    /// MAC address of the bridge.
+    pub mac: String,
+    /// Network mask of the bridge.
+    pub netmask: String,
+    /// Gateway IP address of the bridge.
+    pub gateway: String,
+    /// Whether the IP address of the bridge is obtained via DHCP.
+    pub dhcp: bool,
+    /// Whether the bridge is registered to synchronize data with a portal account.
+    pub portalservices: bool,
+    /// Current time stored on the bridge.
+    #[serde(rename="UTC")]
+    pub utc: String,
+    /// The local time of the bridge or "none".
+    pub localtime: String,
+    /// Timezone of the bridge as OlsenIDs (e.g. "Europe/Amsterdam") or "none".
+    pub timezone: String,
+    /// The current wireless frequency channel used by the bridge. It can take values of 11, 15, 20,25 or 0 if undefined (factory new).
+    pub zigbeechannel: u8,
+    /// This parameter uniquely identifies the hardware model of the bridge (BSB001, BSB002).
+    pub modelid: String,
+    /// The unique bridge id. This is currently generated from the bridge Ethernet MAC address.
+    pub bridgeid: String,
+    /// Whether bridge settings are factory new.
+    pub factorynew: bool,
+    /// If a bridge backup file has been restored on this bridge from a bridge with a different bridgeid, it will indicate that bridge id.
+    pub replacesbridgeid: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-/// An object containing the ID of a newly created Group
-pub struct GroupId{
-    /// The ID of the group
-    pub id: usize
+#[derive(Debug, Clone, Serialize)]
+/// Information to set about software updates on the bridge
+pub struct SoftwareUpdateModifier {
+    /// Lets the bridge search for software updates
+    pub checkforupdate: bool
 }
 
-#[derive(Debug, Deserialize)]
-/// An error object returned from the API
-pub struct Error {
-    /// The URI the error happened on
-    pub address: String,
-    /// A short description of the error
-    pub description: String,
-    /// Its errorcode
-    #[serde(rename="type")]
-    pub code: u16,
+#[derive(Debug, Clone, Serialize)]
+/// Changes to be applied to the configuration.
+///
+/// This is parsed to `bridge::modify_configuration()`
+pub struct ConfigurationModifier {
+    /// Name of the bridge. This is also its uPnP name.
+    pub name: Option<String>,
+    /// Contains information about software updates
+    pub swupdate: Option<SoftwareUpdateModifier>,
+    /// IP Address of the proxy server being used or "none".
+    pub proxyaddress: Option<String>,
+    /// Port of the proxy being used or 0 if no proxy is being used
+    pub proxyport: Option<u16>,
+    /// Whether the linkbuttion has been preseed within the last 30 seconds.
+    pub linkbutton: Option<bool>,
+    /// IP address of the bridge.
+    pub ipaddress: Option<String>,
+    /// Network mask of the bridge.
+    pub netmask: Option<String>,
+    /// Gateway IP address of the bridge.
+    pub gateway: Option<String>,
+    /// Whether the IP address of the bridge is obtained via DHCP.
+    pub dhcp: Option<bool>,
+    /// Current time stored on the bridge.
+    ///
+    /// **Only modifiable when bridge cannot access the internet.**
+    #[serde(rename="UTC")]
+    pub utc: Option<String>,
+    /// Timezone of the bridge.
+    pub timezone: Option<String>,
+    /// Perform a touchlink action if true.
+    pub touchlink: Option<bool>
+}
+
+fn null_value() -> JsonValue{
+    JsonValue::Null
+}
+
+#[derive(Debug, Clone, Deserialize)]
+/// The entire datastore of the bridge.
+pub struct FullState {
+    /// All lights on the bridge.
+    pub lights: Map<usize, Light>,
+    /// All groups on the bridge.
+    pub groups: Map<usize, Group>,
+    /// The configuration of the bridge.
+    pub config: Configuration,
+    /// Not yet fully implemented
+    #[serde(default = "null_value")]
+    pub schedule: JsonValue,
+    /// Not yet fully implemented
+    #[serde(default = "null_value")]
+    pub scenes: JsonValue,
+    /// Not yet fully implemented
+    #[serde(default = "null_value")]
+    pub sensors: JsonValue,
+    /// Not yet fully implemented
+    #[serde(default = "null_value")]
+    pub rules: JsonValue
 }
