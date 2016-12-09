@@ -23,16 +23,16 @@ pub struct HueResponse<T: Deserialize>{
     pub error: Option<Error>
 }
 
-use ::errors::HueError;
+use ::errors::{HueErrorKind,Result};
 
 impl<T: Deserialize> HueResponse<T> {
-    pub fn into_result(self) -> Result<T, HueError> {
+    pub fn into_result(self) -> Result<T> {
         if let Some(t) = self.success{
             Ok(t)
         }else if let Some(error) = self.error{
             Err(error.into())
         }else{
-            Err(HueError::MalformedResponse)
+            Err(HueErrorKind::MalformedResponse.into())
         }
     }
 }

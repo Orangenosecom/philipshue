@@ -1,34 +1,57 @@
 use hyper;
 use std::convert::From;
-use serde_json::Error as JsonError;
+use serde_json;
 use std::num::ParseIntError;
 
-/// Handy type alias for a `Result` with `HueError`
-pub type Result<T> = ::std::result::Result<T, HueError>;
-
+/// an error returned from the bridge
 #[derive(Debug)]
-/// Wrapper for all errors that can occur in this crate
-pub enum HueError {
-    /// The response from the bridge was malformed
-    ///
-    /// This doesn't happen in practice
-    MalformedResponse,
-    /// An error that occured in the bridge
-    BridgeError{
-        /// The URI the error happened on
-        address: String,
-        /// A short description of the error
-        description: String,
-        /// The `BridgeError`
-        error: BridgeError
-    },
-    /// A `serde_json::error::Error`
-    JsonError(JsonError),
-    /// A `hyper::Error`
-    HyperError(hyper::Error),
-    /// An `std::num::ParseIntError`
-    ParseIntError(ParseIntError)
+pub struct BridgeError {
+    /// The URI the error happened on
+    address: String,
+    /// A short description of the error
+    description: String,
+    /// The `BridgeError`
+    error: BridgeErrorCode
 }
+
+impl From<::json::Error> for HueError {
+    fn from(e: ::json::Error) -> HueError {
+        HueErrorKind::BridgeError(BridgeError {
+            address:e.address,
+            description:e.description,
+            error:From::from(e.code),
+        }).into()
+    }
+}
+
+error_chain! {
+    
+    types {
+        HueError, HueErrorKind, ResultExt;
+    }
+
+    errors {
+        /// The response from the bridge was malformed
+        ///
+        /// This doesn't happen in practice
+        MalformedResponse { }
+        /// An error that occured in the bridge
+        BridgeError(b:BridgeError) {
+            description("bridge error")
+            display("Bridge error: '{:?}'", b)
+        }
+    }
+    
+    foreign_links {
+        JsonError(serde_json::Error);
+        HyperError(hyper::Error);
+        ParseIntError(ParseIntError);
+    }
+    
+}
+
+/// compacted Result type for our HueError
+pub type Result<T> = ::std::result::Result<T, HueError>;
 
 macro_rules! error_enum {
     (
@@ -59,7 +82,7 @@ error_enum!{
     #[repr(u16)]
     #[allow(missing_docs)]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    pub enum BridgeError{
+    pub enum BridgeErrorCode {
         // Generic Errors
         UnauthorizedUser = 1,
         BodyContainsInvalidJson = 2,
@@ -107,40 +130,12 @@ error_enum!{
 
 #[test]
 fn bridge_errors() {
-    use self::BridgeError::*;
+    use self::BridgeErrorCode::*;
 
-    assert_eq!(BridgeError::from(101), LinkButtonNotPressed);
-    assert_eq!(BridgeError::from(0), Other);
-    assert_eq!(BridgeError::from(51234), Other);
-    assert_eq!(BridgeError::from(4), MethodNotAvailableForResource);
+    assert_eq!(BridgeErrorCode::from(101), LinkButtonNotPressed);
+    assert_eq!(BridgeErrorCode::from(0), Other);
+    assert_eq!(BridgeErrorCode::from(51234), Other);
+    assert_eq!(BridgeErrorCode::from(4), MethodNotAvailableForResource);
     assert_eq!(SceneCouldNotBeRemoved as u16, 403);
     assert_eq!(InternalError as u16, 901);
-}
-
-impl From<::json::Error> for HueError {
-    fn from(::json::Error{address, code, description}: ::json::Error) -> Self {
-        HueError::BridgeError{
-            address: address,
-            description: description,
-            error: From::from(code)
-        }
-    }
-}
-
-impl From<JsonError> for HueError {
-    fn from(err: JsonError) -> HueError {
-        HueError::JsonError(err)
-    }
-}
-
-impl From<hyper::error::Error> for HueError {
-    fn from(err: hyper::error::Error) -> HueError {
-        HueError::HyperError(err)
-    }
-}
-
-impl From<ParseIntError> for HueError {
-    fn from(err: ParseIntError) -> HueError {
-        HueError::ParseIntError(err)
-    }
 }
