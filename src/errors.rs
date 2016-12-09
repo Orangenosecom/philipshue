@@ -3,24 +3,9 @@ use std::convert::From;
 use serde_json;
 use std::num::ParseIntError;
 
-/// an error returned from the bridge
-#[derive(Debug)]
-pub struct BridgeError {
-    /// The URI the error happened on
-    address: String,
-    /// A short description of the error
-    description: String,
-    /// The `BridgeError`
-    error: BridgeErrorCode
-}
-
 impl From<::json::Error> for HueError {
     fn from(e: ::json::Error) -> HueError {
-        HueErrorKind::BridgeError(BridgeError {
-            address:e.address,
-            description:e.description,
-            error:From::from(e.code),
-        }).into()
+        HueErrorKind::BridgeError(e.address, e.description, From::from(e.code)).into()
     }
 }
 
@@ -36,9 +21,9 @@ error_chain! {
         /// This doesn't happen in practice
         MalformedResponse { }
         /// An error that occured in the bridge
-        BridgeError(b:BridgeError) {
+        BridgeError(address:String, description:String, error:BridgeError) {
             description("bridge error")
-            display("Bridge error: '{:?}'", b)
+            display("Bridge error: {} {} {:?}", address, description, error)
         }
     }
     
@@ -82,7 +67,7 @@ error_enum!{
     #[repr(u16)]
     #[allow(missing_docs)]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    pub enum BridgeErrorCode {
+    pub enum BridgeError {
         // Generic Errors
         UnauthorizedUser = 1,
         BodyContainsInvalidJson = 2,
@@ -130,12 +115,12 @@ error_enum!{
 
 #[test]
 fn bridge_errors() {
-    use self::BridgeErrorCode::*;
+    use self::BridgeError::*;
 
-    assert_eq!(BridgeErrorCode::from(101), LinkButtonNotPressed);
-    assert_eq!(BridgeErrorCode::from(0), Other);
-    assert_eq!(BridgeErrorCode::from(51234), Other);
-    assert_eq!(BridgeErrorCode::from(4), MethodNotAvailableForResource);
+    assert_eq!(BridgeError::from(101), LinkButtonNotPressed);
+    assert_eq!(BridgeError::from(0), Other);
+    assert_eq!(BridgeError::from(51234), Other);
+    assert_eq!(BridgeError::from(4), MethodNotAvailableForResource);
     assert_eq!(SceneCouldNotBeRemoved as u16, 403);
     assert_eq!(InternalError as u16, 901);
 }
