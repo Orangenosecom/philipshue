@@ -5,7 +5,7 @@ use std::thread;
 use std::time::Duration;
 
 use philipshue::bridge;
-use philipshue::errors::{HueError, BridgeError};
+use philipshue::errors::{HueError, HueErrorKind, BridgeError};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -21,7 +21,7 @@ fn main() {
                     println!("User registered: {}, on IP: {}", bridge, ip);
                     break;
                 },
-                Err(HueError::BridgeError{error: BridgeError::LinkButtonNotPressed, ..}) => {
+                Err(HueError(HueErrorKind::BridgeError(_,_,BridgeError::LinkButtonNotPressed),_)) => {
                     println!("Please, press the link on the bridge. Retrying in 5 seconds");
                     thread::sleep(Duration::from_secs(5));
                 }

@@ -35,7 +35,8 @@ serde = "0.8"
 serde_derive = { version = "0.8", optional = true }
 serde_json = "0.8"
 lazy_static = "0.2.1"
-ssdp = { version = "0.4", optional = true }
+ssdp = { version = "0.5", optional = true }
+error-chain = "0.7"
 
 [dependencies.hyper]
 version = "0.9.11"

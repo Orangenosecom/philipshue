@@ -41,7 +41,7 @@ pub fn discover_upnp() -> ::std::result::Result<Vec<String>, ::ssdp::SSDPError>{
 /// Therefore it recommended to call this function in a loop:
 /// ## Example
 /// ```no_run
-/// use philipshue::errors::{HueError, BridgeError};
+/// use philipshue::errors::{HueError, HueErrorKind, BridgeError};
 /// use philipshue::bridge::{self, Bridge};
 ///
 /// let mut bridge = None;
@@ -58,7 +58,7 @@ pub fn discover_upnp() -> ::std::result::Result<Vec<String>, ::ssdp::SSDPError>{
 ///             break;
 ///         },
 ///         // Prompt the user to press the link button
-///         Err(HueError::BridgeError{error: BridgeError::LinkButtonNotPressed, ..}) => {
+///         Err(HueError(HueErrorKind::BridgeError(_,_,BridgeError::LinkButtonNotPressed),_)) => {
 ///             println!("Please, press the link on the bridge. Retrying in 5 seconds");
 ///             std::thread::sleep(std::time::Duration::from_secs(5));
 ///         },

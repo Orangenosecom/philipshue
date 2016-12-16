@@ -15,6 +15,8 @@ extern crate hyper;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate error_chain;
 
 pub use bridge::{discover, Bridge};
 pub use hue::LightCommand;
