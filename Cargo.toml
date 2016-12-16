@@ -39,6 +39,6 @@ ssdp = { version = "0.5", optional = true }
 error-chain = "0.7"
 
 [dependencies.hyper]
-version = "0.9.11"
+version = "0.9.14"
 default-features = false
-features = ["ssl", "serde-serialization"]
+features = ["serde-serialization"]
