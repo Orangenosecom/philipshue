@@ -251,4 +251,11 @@ impl Bridge {
     pub fn get_full_state(&self) -> Result<FullState> {
         send(self.client.get(&self.url))
     }
+
+    // SCENES
+
+    /// Gets all scenes of the bridge
+    pub fn get_all_scenes(&self) -> Result<Map<String, Scene>> {
+        send(self.client.get(&format!("{}scenes", self.url)))
+    }
 }

@@ -477,13 +477,49 @@ pub struct FullState {
     /// Not yet fully implemented
     #[serde(default = "null_value")]
     pub schedule: JsonValue,
-    /// Not yet fully implemented
-    #[serde(default = "null_value")]
-    pub scenes: JsonValue,
+    /// All scenes on the bridge
+    pub scenes: Map<String, Scene>,
     /// Not yet fully implemented
     #[serde(default = "null_value")]
     pub sensors: JsonValue,
     /// Not yet fully implemented
     #[serde(default = "null_value")]
     pub rules: JsonValue
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Scene {
+    pub name: String,
+    pub lights: Vec<usize>,
+    pub owner: String,
+    pub recycle: bool,
+    pub locked: bool,
+    pub appdata: Option<AppData>,
+    pub picture: String,
+    pub lastupdated: Option<String>,
+    pub version: u8,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppData {
+    pub version: i8,
+    pub data: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SceneCreater {
+    pub name: String,
+    pub lights: Vec<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recycle: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locked: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub appdata: Option<AppData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub picture: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lastupdated: Option<String>,
 }
