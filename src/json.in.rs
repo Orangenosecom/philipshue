@@ -6,10 +6,10 @@ pub struct User{
 }
 
 #[derive(Debug, Deserialize)]
-/// An object containing the ID of a newly created Group
-pub struct GroupId{
-    /// The ID of the group
-    pub id: usize
+/// An object containing the ID of something newly created
+pub struct Id<T: Deserialize> {
+    /// The ID
+    pub id: T
 }
 
 use ::serde::Deserialize;

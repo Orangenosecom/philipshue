@@ -1,6 +1,8 @@
 use hyper::Client;
 use hyper::client::Body;
 
+use std::io::Read;
+
 use serde_json::{to_vec, from_reader};
 
 use errors::{Result, HueError};
@@ -103,7 +105,19 @@ fn send_with_body<'a, T: Deserialize>(rb: RequestBuilder<'a>, body: &'a [u8]) ->
 fn send<T: Deserialize>(rb: RequestBuilder) -> Result<T> {
     rb.send()
         .map_err(HueError::from)
-        .and_then(|ref mut resp| from_reader::<_, T>(resp).map_err(From::from))
+        .and_then(|ref mut resp| {
+            let mut buf = Vec::new();
+            resp.read_to_end(&mut buf).map_err(::serde_json::Error::from)?;
+
+            match from_reader::<_, T>(&mut &*buf) {
+                Ok(t) => Ok(t),
+                Err(_) => from_reader::<_, Vec<HueResponse<T>>>(&mut &*buf)?
+                    .into_iter()
+                    .next()
+                    .ok_or_else(|| "Malformed response".into())
+                    .and_then(HueResponse::into_result)
+            }
+        })
 }
 
 #[test]
@@ -199,7 +213,7 @@ impl Bridge {
             state: None,
             action: None,
         };
-        let r: HueResponse<GroupId> = send_with_body(self.client.post(&format!("{}groups", self.url)),
+        let r: HueResponse<Id<usize>> = send_with_body(self.client.post(&format!("{}groups", self.url)),
                                                      &to_vec(&g)?)?;
         r.into_result().map(|g| g.id)
     }
@@ -257,5 +271,31 @@ impl Bridge {
     /// Gets all scenes of the bridge
     pub fn get_all_scenes(&self) -> Result<Map<String, Scene>> {
         send(self.client.get(&format!("{}scenes", self.url)))
+    }
+    /// Creates a scene on the bridge and returns the ID of the created scene.
+    pub fn create_scene(&self, scene: &SceneCreater) -> Result<String> {
+        let r: HueResponse<Id<String>> = send_with_body(self.client.post(&format!("{}scenes", self.url)),
+                                                        &to_vec(scene)?)?;
+        r.into_result().map(|g| g.id)
+    }
+    /// Sets general things in the specified scene
+    pub fn modify_scene(&self, id: &str, scene: &SceneModifier) -> Result<SuccessVec> {
+        send_with_body(self.client.put(&format!("{}scenes/{}", self.url, id)), &to_vec(scene)?)
+            .and_then(extract)
+    }
+    /// Sets the light state of the specified ID that is stored in the scene
+    pub fn set_light_state_in_scene(&self, scene_id: &str, light_id: usize,
+        state: &LightStateChange) -> Result<SuccessVec> {
+
+        send_with_body(self.client.put(&format!("{}scenes/{}/lightstates/{}", self.url,
+            scene_id, light_id)), &to_vec(state)?).and_then(extract)
+    }
+    /// Deletes the specified scene
+    pub fn delete_scene(&self, id: &str) -> Result<Vec<String>> {
+        send(self.client.delete(&format!("{}scenes/{}", self.url, id))).and_then(extract)
+    }
+    /// Gets the scene with the specified ID with its `lightstates`
+    pub fn get_scene_with_states(&self, id: &str) -> Result<Scene> {
+        send(self.client.get(&format!("{}scenes/{}", self.url, id)))
     }
 }

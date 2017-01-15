@@ -31,6 +31,40 @@ pub struct LightState {
     pub reachable: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// The state of the light. Same as `LightState` except there's no `reachable` field.
+pub struct LightStateChange {
+    /// Whether the light is on
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on: Option<bool>,
+    /// Brightness of the light. This is a scale from the minimum capable brightness, 1, to the maximum, 254.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bri: Option<u8>,
+    /// Hue of the light. Both 0 and 65535 are red, 25500 is green and 46920 is blue.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hue: Option<u16>,
+    /// Staturation of the light. 254 is the most saturated (colored) and 0 is the least (white).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sat: Option<u8>,
+    /// The x and y coordinates of a colour in [CIE space](http://www.developers.meethue.com/documentation/core-concepts#color_gets_more_complicated)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub xy: Option<(f32, f32)>,
+    /// The [mired](http://en.wikipedia.org/wiki/Mired) colour temperature of the light.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ct: Option<u16>,
+    /// The [alert effect](http://www.developers.meethue.com/documentation/core-concepts#some_extra_fun_stuff)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alert: Option<String>,
+    /// The dynamic effect of the light. It can be either "none" or "colorloop"
+    ///
+    /// If "colorloop", the light will cycle hues
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effect: Option<String>,
+    /// The current colour mode either: "hs" for hue and saturation, "xy" for x and y coordinates in colour space, or "ct" for colour temperature
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub colormode: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 /// Details about a specific light
 pub struct Light {
@@ -251,7 +285,7 @@ pub struct Group {
     // Actually just a `LightState` without the `reachable` field
     /// The `LightCommand` applied to all lights in the group
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub action: Option<LightCommand>,
+    pub action: Option<LightStateChange>,
     /// State reprensentation of the group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<GroupState>,
@@ -487,39 +521,85 @@ pub struct FullState {
     pub rules: JsonValue
 }
 
+/// A [scene](https://developers.meethue.com/documentation/scenes-api)
+// TODO Better explanation of scenes
 #[derive(Debug, Clone, Deserialize)]
 pub struct Scene {
+    /// Human readable name given to the scene
     pub name: String,
+    /// The IDs of the lights in the scene.
     pub lights: Vec<usize>,
+    /// The name of the user that created or last modified the scene
     pub owner: String,
+    /// Whether the scene can be deleted automatically by the bridge
     pub recycle: bool,
+    /// Whether the scene is locked by a rule or schedule.
     pub locked: bool,
+    /// App specific data linked to this scene
+    #[serde(deserialize_with = "non_default")]
     pub appdata: Option<AppData>,
-    pub picture: String,
+    /// Reserved for future use. See Philips Hue documention
+    pub picture: Option<String>,
+    /// UTC timestamp of when the scene was last updated
     pub lastupdated: Option<String>,
-    pub version: u8,
+    /// Light states stored on the scene to be recalled
+    #[serde(default)]
+    pub lightstates: Map<usize, LightStateChange>
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+use serde::de::{Deserialize, Deserializer};
+
+fn non_default<T, D>(de: &mut D) -> Result<Option<T>, D::Error>
+where T: Deserialize + PartialEq + Default, D: Deserializer {
+    let ad = <Option<T>>::deserialize(de)?;
+    if ad.as_ref().map(|x| *x == Default::default()).unwrap_or(true) {
+        Ok(None)
+    } else {
+        Ok(ad)
+    }
+}
+
+#[derive(Default, Debug, PartialEq, Clone, Serialize, Deserialize)]
+/// App specific data linked to a scene
 pub struct AppData {
+    /// App specific version of the data field.
+    #[serde(default)]
     pub version: i8,
+    /// App specific data. Can be anything.
+    #[serde(default)]
     pub data: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
+/// A [scene](https://developers.meethue.com/documentation/scenes-api)
 pub struct SceneCreater {
+    /// Human readable name.
     pub name: String,
+    /// IDs of the lights the scene uses.
     pub lights: Vec<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub owner: Option<String>,
+    /// Whether the bridge can just delete this scene.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recycle: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub locked: Option<bool>,
+    /// Application specific data.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub appdata: Option<AppData>,
+    /// Picture for the scene
     #[serde(skip_serializing_if = "Option::is_none")]
     pub picture: Option<String>,
+    /// Duration of time (in deciseconds) for the lights to transition from one state to another with this scene.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub lastupdated: Option<String>,
+    pub transitiontime: Option<u16>
+}
+#[derive(Debug, Clone, Serialize)]
+/// Struct for modifying a scene (renaming, setting lights, updating their state).
+pub struct SceneModifier {
+    /// Name to rename the scene to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// New IDs of the lights the scene uses
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lights: Option<Vec<usize>>,
+    /// If true, it will update the light states in the scene to the states of the actual lights
+    #[serde(skip_serializing_if = "::std::ops::Not::not")]
+    pub storelightstate: bool
 }
