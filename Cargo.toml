@@ -26,10 +26,10 @@ nupnp = ["hyper-openssl"]
 unstable = ["upnp"]
 
 [dependencies]
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
 ssdp = { version = "0.5", optional = true }
-error-chain = "0.8"
-hyper = "0.10.4"
-hyper-openssl = { version = "0.2.2", optional = true }
+error-chain = "0.10"
+hyper = "0.10"
+hyper-openssl = { version = "0.2", optional = true }

@@ -7,7 +7,8 @@ pub struct User{
 
 #[derive(Debug, Deserialize)]
 /// An object containing the ID of something newly created
-pub struct Id<T: Deserialize> {
+pub struct Id<T>
+{
     /// The ID
     pub id: T
 }
@@ -16,7 +17,7 @@ use ::serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 /// A response that either is an error or a success
-pub struct HueResponse<T: Deserialize>{
+pub struct HueResponse<T> {
     /// The result from the bridge if it didn't fail
     pub success: Option<T>,
     /// The error that was returned from the bridge
@@ -25,7 +26,7 @@ pub struct HueResponse<T: Deserialize>{
 
 use ::errors::HueError;
 
-impl<T: Deserialize> HueResponse<T> {
+impl<'de, T> HueResponse<T> where T: Deserialize<'de> {
     pub fn into_result(self) -> Result<T, HueError> {
         if let Some(t) = self.success {
             Ok(t)

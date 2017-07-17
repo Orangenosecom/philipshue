@@ -548,8 +548,8 @@ pub struct Scene {
     pub lightstates: BTreeMap<usize, LightStateChange>
 }
 
-fn non_default<'a, T, D>(de: D) -> Result<Option<T>, D::Error>
-where T: Deserialize + PartialEq + Default, D: Deserializer {
+fn non_default<'a, 'de, T, D>(de: D) -> Result<Option<T>, D::Error>
+where T: Deserialize<'de> + PartialEq + Default, D: Deserializer<'de> {
     let ad = <Option<T>>::deserialize(de)?;
     if ad.as_ref().map(|x| *x == Default::default()).unwrap_or(true) {
         Ok(None)

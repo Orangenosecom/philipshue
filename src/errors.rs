@@ -1,6 +1,7 @@
 use hyper;
 use std::convert::From;
 use serde_json;
+use std::io;
 
 impl From<::json::Error> for HueError {
     fn from(e: ::json::Error) -> HueError {
@@ -34,6 +35,7 @@ error_chain! {
     foreign_links {
         JsonError(serde_json::Error) #[doc = "Json error"];
         HyperError(hyper::Error)     #[doc = "Hyper error"];
+        IOError(io::Error)           #[doc = "IO error"];
     }
 }
 
