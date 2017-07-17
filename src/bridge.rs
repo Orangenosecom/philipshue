@@ -33,6 +33,7 @@ pub fn discover_upnp() -> ::std::result::Result<Vec<String>, ::ssdp::SSDPError> 
     use ssdp::header::{HeaderMut, Man, MX, ST};
     use ssdp::message::SearchRequest;
     use ssdp::FieldMap;
+    use ssdp::message::Multicast;
 
     let mut request = SearchRequest::new();
 
