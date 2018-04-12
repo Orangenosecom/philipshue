@@ -13,8 +13,6 @@ pub struct Id<T>
     pub id: T
 }
 
-use ::serde::Deserialize;
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// A response that either is an error or a success
