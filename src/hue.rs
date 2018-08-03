@@ -67,7 +67,7 @@ pub struct LightStateChange {
     pub colormode: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Details about a specific light
 pub struct Light {
     /// The unique name given to the light
